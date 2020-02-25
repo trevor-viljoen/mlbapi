@@ -1,4 +1,4 @@
-[![Join Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://mlbapi-slack-invite.herokuapp.com/)
+[![Join Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://pymlbapi-slack-invite.herokuapp.com/)
 
 mlbapi v0.0.1 - python bindings for MLBAM's StatsAPI-based JSON API endpoints
 mlbapi's data classes will return raw json data from the MLBAM's statsapi.

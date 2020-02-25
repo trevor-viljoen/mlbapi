@@ -131,7 +131,7 @@ merged and included in a future release.
 ## Additional Resources
 * [General GitHub documentation](https://help.github.com/)
 * [GitHub pull request documentation](https://help.github.com/articles/creating-a-pull-request/)
-* [mlbapi Slack Team](https://mlbapi.slack.com)
+* [mlbapi Slack Team](https://pymlbapi.slack.com)
 * [Contributor
   Covenant](https://www.contributor-covenant.org/version/1/4/code-of-conduct.html)
 * [License](https://github.com/trevor-viljoen/mlbapi/blob/master/LICENSE)
