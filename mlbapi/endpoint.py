@@ -1,0 +1,17 @@
+""" endpoint constants """
+
+CONFERENCE = 'conference'
+CONFIG = 'config'
+DIVISION = 'division'
+DRAFT = 'draft'
+GAME = 'game'
+HOMERUNDERBY = 'homerunderby'
+LEAGUE = 'league'
+PEOPLE = 'people'
+SCHEDULE = 'schedule'
+SEASON = 'season'
+SPORTS = 'sports'
+STANDINGS = 'standings'
+STATS = 'stats'
+TEAM = 'teams'
+VENUE = 'venue'
