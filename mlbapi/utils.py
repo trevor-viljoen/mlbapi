@@ -6,11 +6,13 @@ import inflection
 import mlbapi.exceptions
 
 def check_kwargs(keys, list_of_valid_params, exception):
-    """ Make sure we have a valid set of keys for a given endpoint """
-    for key in keys:
-        if key not in list_of_valid_params:
-            error = '{} is not a valid parameter.'.format(key)
-            raise exception(error)
+    """ Make sure we have a valid set of keys for a given endpoint.
+    If list_of_valid_params is `None` we don't have anything to check. """
+    if list_of_valid_params:
+        for key in keys:
+            if key not in list_of_valid_params:
+                error = '{} is not a valid parameter.'.format(key)
+                raise exception(error)
     return True
 
 def to_python_var(api_key):
