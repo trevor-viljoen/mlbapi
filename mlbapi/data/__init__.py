@@ -12,7 +12,7 @@ from mlbapi.utils import check_kwargs
 #TEST_URL = "https://statsapi.mlb.com/api/v1/game/447440/boxscore"
 API_VERSION = "v1"
 BASE_URL = 'https://statsapi.mlb.com/api'
-SUPPORTED_ENDPOINTS = ['game', 'people', 'schedule', 'teams', 'standings']
+SUPPORTED_ENDPOINTS = ['game', 'people', 'schedule', 'teams', 'standings', 'divisions']
 
 def request(endpoint, context=None, primary_key=None, secondary_key=None,
             valid_params=None, **kwargs):

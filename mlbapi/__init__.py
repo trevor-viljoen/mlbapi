@@ -16,12 +16,14 @@ from .data.game import get_play_by_play
 from .data.game import get_boxscore
 from .data.game import get_live_diff
 from .data.team import get_teams
+from .data.division import get_divisions
 from .data.gameday import get_schedule
 from .data.standings import get_standings
 
 from .object.game import BoxScore
 from .object.game import LineScore
 from .object.team import Teams
+from .object.division import Divisions
 from .object.gameday import Schedule
 from .object.standings import Standings
 
@@ -49,6 +51,10 @@ def live_diff(game_pk, **kwargs):
 def teams(**kwargs):
     data = get_teams(**kwargs)
     return Teams(data)
+
+def divisions(**kwargs):
+    data = get_divisions(**kwargs)
+    return Divisions(data)
 
 def standings(**kwargs):
     data = get_standings(**kwargs)

@@ -2,7 +2,7 @@
 
 CONFERENCE = 'conference'
 CONFIG = 'config'
-DIVISION = 'division'
+DIVISION = 'divisions'
 DRAFT = 'draft'
 GAME = 'game'
 HOMERUNDERBY = 'homerunderby'
