@@ -59,7 +59,7 @@ def get_json_data(headers, api_url, **kwargs):
     try:
         if kwargs:
             params = mlbapi.utils.to_api_keys(kwargs)
-            print(api_url, params)
+            #print(api_url, params)
             api_request = requests.get(api_url, headers=headers, params=params)
         else:
             api_request = requests.get(api_url, headers=headers)
