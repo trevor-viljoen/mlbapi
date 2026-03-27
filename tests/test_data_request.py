@@ -48,6 +48,32 @@ class TestGetApiUrl:
         url = mlbapi.data.get_api_url('sports')
         assert url == 'https://statsapi.mlb.com/api/v1/sports'
 
+    def test_api_version_override(self):
+        url = mlbapi.data.get_api_url('game', primary_key=716463,
+                                      context='feed/live', api_version='v1.1')
+        assert url == 'https://statsapi.mlb.com/api/v1.1/game/716463/feed/live'
+
+    def test_default_version_is_v1(self):
+        url = mlbapi.data.get_api_url('game')
+        assert '/v1/' in url
+
+    # Corrected endpoint paths
+    def test_conferences_endpoint(self):
+        url = mlbapi.data.get_api_url('conferences')
+        assert url == 'https://statsapi.mlb.com/api/v1/conferences'
+
+    def test_venues_endpoint(self):
+        url = mlbapi.data.get_api_url('venues')
+        assert url == 'https://statsapi.mlb.com/api/v1/venues'
+
+    def test_seasons_endpoint(self):
+        url = mlbapi.data.get_api_url('seasons')
+        assert url == 'https://statsapi.mlb.com/api/v1/seasons'
+
+    def test_home_run_derby_endpoint(self):
+        url = mlbapi.data.get_api_url('homeRunDerby', primary_key=716463)
+        assert url == 'https://statsapi.mlb.com/api/v1/homeRunDerby/716463'
+
 
 class TestGetJsonData:
     def test_successful_request_returns_json(self):

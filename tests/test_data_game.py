@@ -72,6 +72,13 @@ class TestGetLive:
         with pytest.raises(mlbapi.exceptions.ParameterException):
             game_data.get_live(716463, invalid='x')
 
+    def test_uses_v1_1(self):
+        data = {'gamePk': 716463, 'gameData': {}, 'liveData': {}}
+        with patch('requests.get', return_value=_mock_get(data)) as mock_get:
+            game_data.get_live(716463)
+        url = mock_get.call_args[0][0]
+        assert 'v1.1' in url
+
 
 class TestGetLiveDiff:
     def test_returns_json(self):
@@ -86,6 +93,13 @@ class TestGetLiveDiff:
 
     def test_valid_params_list(self):
         assert set(game_data.VALID_LIVE_DIFF_PARAMS) == {'game_pk', 'start_timecode', 'end_timecode'}
+
+    def test_uses_v1_1(self):
+        data = {'diff': []}
+        with patch('requests.get', return_value=_mock_get(data)) as mock_get:
+            game_data.get_live_diff(716463)
+        url = mock_get.call_args[0][0]
+        assert 'v1.1' in url
 
 
 class TestGetColor:
@@ -127,6 +141,13 @@ class TestGetLiveTimestamps:
         with patch('requests.get', return_value=_mock_get(data)):
             result = game_data.get_live_timestamps(716463)
         assert result is not None
+
+    def test_uses_v1_1(self):
+        data = ['20230601_190000']
+        with patch('requests.get', return_value=_mock_get(data)) as mock_get:
+            game_data.get_live_timestamps(716463)
+        url = mock_get.call_args[0][0]
+        assert 'v1.1' in url
 
 
 class TestGetColorTimestamps:

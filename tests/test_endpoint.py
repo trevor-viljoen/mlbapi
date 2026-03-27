@@ -34,10 +34,49 @@ def test_league_endpoint():
     assert mlbapi.endpoint.LEAGUE == 'league'
 
 
+# Corrected endpoint paths (previously wrong)
+def test_conference_endpoint_is_plural():
+    assert mlbapi.endpoint.CONFERENCE == 'conferences'
+
+
+def test_homerunderby_endpoint_is_camel_case():
+    assert mlbapi.endpoint.HOMERUNDERBY == 'homeRunDerby'
+
+
+def test_venue_endpoint_is_plural():
+    assert mlbapi.endpoint.VENUE == 'venues'
+
+
+def test_season_endpoint_path():
+    assert mlbapi.endpoint.SEASON == 'seasons'
+
+
+# New endpoints
+def test_attendance_endpoint():
+    assert mlbapi.endpoint.ATTENDANCE == 'attendance'
+
+
+def test_awards_endpoint():
+    assert mlbapi.endpoint.AWARDS == 'awards'
+
+
+def test_jobs_endpoint():
+    assert mlbapi.endpoint.JOBS == 'jobs'
+
+
+def test_meta_endpoint():
+    assert mlbapi.endpoint.META == 'meta'
+
+
+def test_transactions_endpoint():
+    assert mlbapi.endpoint.TRANSACTIONS == 'transactions'
+
+
 def test_all_endpoints_are_strings():
-    attrs = ['CONFERENCE', 'CONFIG', 'DIVISION', 'DRAFT', 'GAME',
-             'HOMERUNDERBY', 'LEAGUE', 'PEOPLE', 'SCHEDULE', 'SEASON',
-             'SPORTS', 'STANDINGS', 'STATS', 'TEAM', 'VENUE']
+    attrs = ['ATTENDANCE', 'AWARDS', 'CONFERENCE', 'CONFIG', 'DIVISION',
+             'DRAFT', 'GAME', 'GAME_PACE', 'HIGH_LOW', 'HOMERUNDERBY',
+             'JOBS', 'LEAGUE', 'META', 'PEOPLE', 'SCHEDULE', 'SEASON',
+             'SPORTS', 'STANDINGS', 'STATS', 'TEAM', 'TRANSACTIONS', 'VENUE']
     for attr in attrs:
         assert isinstance(getattr(mlbapi.endpoint, attr), str), \
             f'{attr} should be a string'

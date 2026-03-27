@@ -9,13 +9,17 @@ import mlbapi.exceptions
 from mlbapi.utils import to_api_keys
 from mlbapi.utils import check_kwargs
 
-#TEST_URL = "https://statsapi.mlb.com/api/v1/game/447440/boxscore"
 API_VERSION = "v1"
 BASE_URL = 'https://statsapi.mlb.com/api'
-SUPPORTED_ENDPOINTS = ['game', 'people', 'schedule', 'teams', 'standings', 'divisions', 'sports']
+SUPPORTED_ENDPOINTS = [
+    'game', 'people', 'schedule', 'teams', 'standings', 'divisions',
+    'sports', 'league', 'conferences', 'seasons', 'venues', 'draft',
+    'homeRunDerby', 'stats', 'attendance', 'awards', 'transactions',
+    'gamePace', 'highLow', 'jobs',
+]
 
 def request(endpoint, context=None, primary_key=None, secondary_key=None,
-            valid_params=None, **kwargs):
+            valid_params=None, api_version=None, **kwargs):
     """This method takes a primary_key, an API context, and optionally a
     dictionary of params passed as a query to the API context.
 
@@ -25,6 +29,7 @@ def request(endpoint, context=None, primary_key=None, secondary_key=None,
         primary_key (int): The primary key, ex: game_pk, person_id
         secondary_key (int): The secondary key, ex: game_pk, person_id
         valid_params (list): A list of valid parameters for the endpoint
+        api_version (string): Override the default API version (e.g. 'v1.1')
 
     Returns:
         dict: The returned object is the json payload from the API context.
@@ -35,7 +40,8 @@ def request(endpoint, context=None, primary_key=None, secondary_key=None,
 
     check_kwargs(kwargs.keys(), valid_params, mlbapi.exceptions.ParameterException)
 
-    api_url = get_api_url(endpoint, context, primary_key, secondary_key)
+    api_url = get_api_url(endpoint, context, primary_key, secondary_key,
+                          api_version=api_version)
     headers = {
         'User-Agent': 'mlbapi/{0}'.format(mlbapi.version.__version__),
         'Accept-encoding': 'gzip',
@@ -59,7 +65,6 @@ def get_json_data(headers, api_url, **kwargs):
     try:
         if kwargs:
             params = to_api_keys(kwargs)
-            #print(api_url, params)
             api_request = requests.get(api_url, headers=headers, params=params)
         else:
             api_request = requests.get(api_url, headers=headers)
@@ -76,10 +81,12 @@ def get_json_data(headers, api_url, **kwargs):
         raise mlbapi.exceptions.RequestException(error)
     return jdata
 
-def get_api_url(endpoint, context=None, primary_key=None, secondary_key=None):
+def get_api_url(endpoint, context=None, primary_key=None, secondary_key=None,
+                api_version=None):
     """ Return the API URL to retrieve """
+    version = api_version if api_version else API_VERSION
     api_url = ''
-    components = [arg for arg in [API_VERSION, endpoint, primary_key, context,
+    components = [arg for arg in [version, endpoint, primary_key, context,
                                   secondary_key] if arg]
     if endpoint in SUPPORTED_ENDPOINTS:
         base_url = '{}{}'.format(BASE_URL, '/{}'*len(components))
