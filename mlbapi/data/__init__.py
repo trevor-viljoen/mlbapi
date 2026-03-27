@@ -12,7 +12,7 @@ from mlbapi.utils import check_kwargs
 #TEST_URL = "https://statsapi.mlb.com/api/v1/game/447440/boxscore"
 API_VERSION = "v1"
 BASE_URL = 'https://statsapi.mlb.com/api'
-SUPPORTED_ENDPOINTS = ['game', 'people', 'schedule', 'teams', 'standings', 'divisions']
+SUPPORTED_ENDPOINTS = ['game', 'people', 'schedule', 'teams', 'standings', 'divisions', 'sports']
 
 def request(endpoint, context=None, primary_key=None, secondary_key=None,
             valid_params=None, **kwargs):
@@ -58,7 +58,7 @@ def get_json_data(headers, api_url, **kwargs):
     """
     try:
         if kwargs:
-            params = mlbapi.utils.to_api_keys(kwargs)
+            params = to_api_keys(kwargs)
             #print(api_url, params)
             api_request = requests.get(api_url, headers=headers, params=params)
         else:
