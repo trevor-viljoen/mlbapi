@@ -16,6 +16,12 @@ SUPPORTED_ENDPOINTS = [
     'sports', 'league', 'conferences', 'seasons', 'venues', 'draft',
     'homeRunDerby', 'stats', 'attendance', 'awards', 'transactions',
     'gamePace', 'highLow', 'jobs',
+    # meta lookup-table endpoints (each type IS the path segment)
+    'gameTypes', 'gameStatus', 'standingsTypes', 'statGroups', 'statTypes',
+    'pitchTypes', 'hitTrajectories', 'fielderStatuses', 'positions',
+    'eventTypes', 'metrics', 'windDirection', 'sky', 'pitchCodes',
+    'languages', 'leagueLeaderTypes', 'rosterTypes', 'scheduleEventTypes',
+    'situationCodes', 'transactionTypes',
 ]
 
 def request(endpoint, context=None, primary_key=None, secondary_key=None,

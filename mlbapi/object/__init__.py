@@ -17,6 +17,8 @@ def setobjattr(obj, key, value, set_obj=None):
     key = inflection.underscore(key)
     if set_obj:
         setattr(obj, key, set_obj(value))
+    elif isinstance(value, (dict, list)):
+        setattr(obj, key, value)
     else:
         if isinstance(value, bool):
             setattr(obj, key, bool(value))
