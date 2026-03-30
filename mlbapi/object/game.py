@@ -286,7 +286,7 @@ class AwayTeam:
                 players = []
                 for k, v in value.items():
                     players.append(Player(v))
-                    setattr(self, 'players', players)
+                setattr(self, 'players', players)
             else:
                 mlbapi.object.setobjattr(self, key, value)
 
@@ -307,7 +307,7 @@ class HomeTeam:
                 players = []
                 for k, v in value.items():
                     players.append(Player(v))
-                    setattr(self, 'players', players)
+                setattr(self, 'players', players)
             else:
                 mlbapi.object.setobjattr(self, key, value)
 
