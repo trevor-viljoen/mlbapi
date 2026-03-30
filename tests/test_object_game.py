@@ -46,6 +46,25 @@ class TestBoxScore:
         assert isinstance(bs.teams.away.players, list)
         assert len(bs.teams.away.players) == 1
 
+    def test_away_players_empty_dict_sets_attribute(self):
+        # Regression test for #14: setattr was inside the loop so an empty
+        # players dict left the attribute unset, raising AttributeError.
+        import copy
+        data = copy.deepcopy(BOXSCORE_DATA)
+        data['teams']['away']['players'] = {}
+        bs = BoxScore(data)
+        assert hasattr(bs.teams.away, 'players')
+        assert bs.teams.away.players == []
+
+    def test_home_players_empty_dict_sets_attribute(self):
+        # Regression test for #14: same bug in HomeTeam.
+        import copy
+        data = copy.deepcopy(BOXSCORE_DATA)
+        data['teams']['home']['players'] = {}
+        bs = BoxScore(data)
+        assert hasattr(bs.teams.home, 'players')
+        assert bs.teams.home.players == []
+
     def test_away_team_stats(self):
         bs = BoxScore(BOXSCORE_DATA)
         assert hasattr(bs.teams.away, 'team_stats')
