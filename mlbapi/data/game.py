@@ -217,7 +217,7 @@ def get_live(game_pk, **kwargs):
         Data Type: array[string]
     """
     return request(endpoint.GAME, 'feed/live', primary_key=game_pk,
-                   valid_params=VALID_LIVE_PARAMS, **kwargs)
+                   valid_params=VALID_LIVE_PARAMS, api_version='v1.1', **kwargs)
 
 def get_live_diff(game_pk, **kwargs):
     """
@@ -257,7 +257,7 @@ def get_live_diff(game_pk, **kwargs):
         Data Type: string
     """
     return request(endpoint.GAME, 'feed/live/diffPatch', primary_key=game_pk,
-                   valid_params=VALID_LIVE_DIFF_PARAMS, **kwargs)
+                   valid_params=VALID_LIVE_DIFF_PARAMS, api_version='v1.1', **kwargs)
 
 def get_live_timestamps(game_pk, **kwargs):
     """
@@ -271,7 +271,7 @@ def get_live_timestamps(game_pk, **kwargs):
         Data Type: string
     """
     return request(endpoint.GAME, 'feed/live/timestamps', primary_key=game_pk,
-                   valid_params=VALID_LIVE_TIMESTAMPS_PARAMS, **kwargs)
+                   valid_params=VALID_LIVE_TIMESTAMPS_PARAMS, api_version='v1.1', **kwargs)
 
 def get_play_by_play(game_pk, **kwargs):
     """This endpoint allows you to pull the play by play for a game.

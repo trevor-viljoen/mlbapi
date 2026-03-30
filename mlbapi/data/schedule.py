@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""mlbapi functions for the games API endpoints.
+"""mlbapi functions for the schedule API endpoints.
 
-This module's functions gets the JSON payloads for the mlb.com games API
+This module's functions gets the JSON payloads for the mlb.com schedule API
 endpoints.
 
 .. _Google Python Style Guide:
@@ -68,19 +68,12 @@ class Schedule(object):
             if 'team_id' not in kwargs.keys():
                 error = 'Query contains opponentId with no team_id.'
                 raise mlbapi.exceptions.ParameterException(error)
-        elif 'seasons' in kwargs.keys(): # Make sure seasons is a comma delimited list
+        elif 'seasons' in kwargs.keys():
             if isinstance(kwargs['seasons'], list):
-                temp = []
-                for season in kwargs['seasons']:
-                    if not isinstance(season, int):
-                        try:
-                            temp.append(int(season))
-                        except ValueError as error:
-                            raise mlbapi.exceptions.ParameterException(error)
-                if temp:
-                    kwargs['seasons'] = ','.join(temp)
-                else:
-                    kwargs['seasons'] = ','.join(kwargs['seasons'])
+                try:
+                    kwargs['seasons'] = ','.join(str(int(s)) for s in kwargs['seasons'])
+                except ValueError as error:
+                    raise mlbapi.exceptions.ParameterException(error)
             else:
                 error = 'seasons must be a list of years as Integers or Strings.'
                 raise mlbapi.exceptions.ParameterException(error)

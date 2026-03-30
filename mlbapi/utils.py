@@ -34,12 +34,17 @@ def valid_timecode(timecode):
     except ValueError:
         return False
 
-def to_comma_delimited_string(key, instype):
-    """ Return a comma delimited string """
-    temp = []
-    if not isinstance(key, instype):
-        try:
-            temp.append(instype(key))
-        except ValueError as error:
-            raise mlbapi.exceptions.ParameterException(error)
-    return ','.join(temp)
+def to_comma_delimited_string(values, instype):
+    """ Return a comma delimited string of values, each converted to instype """
+    if not isinstance(values, list):
+        values = [values]
+    result = []
+    for val in values:
+        if not isinstance(val, instype):
+            try:
+                result.append(str(instype(val)))
+            except ValueError as error:
+                raise mlbapi.exceptions.ParameterException(error)
+        else:
+            result.append(str(val))
+    return ','.join(result)

@@ -250,6 +250,8 @@ class Team:
                 mlbapi.object.setobjattr(self, key, value, Teams)
             elif key == 'venue':
                 mlbapi.object.setobjattr(self, key, value, Venue)
+            elif key == 'springVenue':
+                mlbapi.object.setobjattr(self, key, value, SpringVenue)
             elif key == 'content':
                 mlbapi.object.setobjattr(self, key, value, Content)
             elif key == 'league':
@@ -262,6 +264,8 @@ class Team:
                 mlbapi.object.setobjattr(self, key, value, Record)
             elif key == 'springLeague':
                 mlbapi.object.setobjattr(self, key, value, SpringLeague)
+            elif key == 'conference':
+                mlbapi.object.setobjattr(self, key, value, Conference)
             else:
                 mlbapi.object.setobjattr(self, key, value)
 
@@ -392,6 +396,10 @@ class Venue(mlbapi.object.Object):
     def __init__(self, data):
         super().__init__(data)
 
+class SpringVenue(mlbapi.object.Object):
+    def __init__(self, data):
+        super().__init__(data)
+
 class League(mlbapi.object.Object):
     def __init__(self, data):
         super().__init__(data)
@@ -404,14 +412,25 @@ class LeagueRecord(mlbapi.object.Object):
     def __init__(self, data):
         super().__init__(data)
 
+class Conference(mlbapi.object.Object):
+    def __init__(self, data):
+        super().__init__(data)
+
 class Records:
     def __init__(self, data):
         for key, value in data.items():
             mlbapi.object.setobjattr(self, key, value)
 
-class Division(mlbapi.object.Object):
+class Division:
     def __init__(self, data):
-        super().__init__(data)
+        for key, value in data.items():
+            if key == 'league':
+                mlbapi.object.setobjattr(self, key, value, League)
+            elif key == 'sport':
+                mlbapi.object.setobjattr(self, key, value, Sport)
+            else:
+                mlbapi.object.setobjattr(self, key, value)
+
 
 class Sport(mlbapi.object.Object):
     def __init__(self, data):

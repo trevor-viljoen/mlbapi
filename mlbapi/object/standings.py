@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 from datetime import timedelta
+import jsons
 
 import inflection
 
@@ -16,6 +17,8 @@ class Standings:
                 setattr(self, inflection.underscore(key), records)
             else:
                 mlbapi.object.setobjattr(self, key, value)
+    def json(self):
+        return jsons.dump(self)
 
 class Record:
     def __init__(self, data):

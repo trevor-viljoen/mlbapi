@@ -79,21 +79,15 @@ def get_teams(**kwargs):
         json
     """
     check_kwargs(kwargs.keys(), VALID_TEAMS_PARAMS, mlbapi.exceptions.ParameterException)
-    if 'league_ids' in kwargs.keys(): # Make sure seasons is a comma delimited list
+    if 'league_ids' in kwargs.keys():
         if isinstance(kwargs['league_ids'], list):
-            temp = []
-            for league_id in kwargs['league_ids']:
-                if not isinstance(league_id, int):
-                    try:
-                        temp.append(int(league_id))
-                    except ValueError as error:
-                        raise mlbapi.exceptions.ParameterException(error)
-            if temp:
-                kwargs['league_ids'] = ','.join(temp)
+            try:
+                kwargs['league_ids'] = ','.join(str(int(lid)) for lid in kwargs['league_ids'])
+            except ValueError as error:
+                raise mlbapi.exceptions.ParameterException(error)
         else:
-            error = 'seasons must be a list of years as Integers or Strings.'
+            error = 'league_ids must be a list of league IDs as Integers or Strings.'
             raise mlbapi.exceptions.ParameterException(error)
-        kwargs['league_ids'] = ','.join([str(lid) for lid in kwargs['league_ids']])
 
     return request(endpoint.TEAM, **kwargs)
 
