@@ -66,19 +66,13 @@ def get_standings(standings_type=None, **kwargs):
     Returns json
     """
     check_kwargs(kwargs.keys(), VALID_STANDINGS_PARAMS, mlbapi.exceptions.ParameterException)
-    if 'league_id' in kwargs.keys(): # Make sure seasons is a comma delimited list
+    if 'league_id' in kwargs.keys():
         if isinstance(kwargs['league_id'], list):
-            temp = []
-            for league_id in kwargs['league_id']:
-                if not isinstance(league_id, int):
-                    try:
-                        temp.append(int(league_id))
-                    except ValueError as error:
-                        raise mlbapi.exceptions.ParameterException(error)
-            if temp:
-                kwargs['league_id'] = ','.join(temp)
+            try:
+                kwargs['league_id'] = ','.join(str(int(lid)) for lid in kwargs['league_id'])
+            except ValueError as error:
+                raise mlbapi.exceptions.ParameterException(error)
         else:
             error = 'league_id must be a list of leagues as Integers or Strings.'
             raise mlbapi.exceptions.ParameterException(error)
-        kwargs['league_id'] = ','.join([str(lid) for lid in kwargs['league_id']])
     return request(endpoint.STANDINGS, primary_key=standings_type, **kwargs)
