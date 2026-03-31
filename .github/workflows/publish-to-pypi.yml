@@ -1,0 +1,75 @@
+# .github/workflows/publish-to-pypi.yml
+#
+# Publishes mlbapi to PyPI automatically when you create a GitHub Release.
+#
+# SETUP REQUIRED (one-time):
+# 1. Go to https://pypi.org/manage/project/mlbapi/settings/publishing/
+# 2. Add a Trusted Publisher with these values:
+#      Owner:         trevor-viljoen
+#      Repository:    mlbapi
+#      Workflow file: publish-to-pypi.yml
+#      Environment:   pypi
+# 3. In your GitHub repo settings, create an Environment named "pypi"
+#    (Settings → Environments → New environment)
+#    Optionally enable "Required reviewers" for extra safety.
+# 4. That's it — no API tokens or secrets needed!
+#
+# TO RELEASE:
+# 1. Bump the version in pyproject.toml
+# 2. Commit and push to dev/main
+# 3. Go to GitHub → Releases → Draft a new release
+# 4. Create a tag matching your version (e.g. v0.1.0)
+# 5. Publish the release — this workflow fires automatically
+
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build source distribution and wheel
+        run: python -m build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mlbapi
+    permissions:
+      id-token: write  # Required for Trusted Publishing (OIDC)
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
