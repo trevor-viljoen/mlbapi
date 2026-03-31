@@ -1,129 +1,82 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from datetime import datetime
-from datetime import timedelta
-import jsons
+"""Pydantic models for the standings object layer."""
 
-import inflection
+from __future__ import annotations
 
-import mlbapi.object
+from typing import Any, List, Optional
+
+from mlbapi.object import MLBModel
 from mlbapi.object.game import Team
 
-class Standings:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'records':
-                records = mlbapi.object.listofobjs(value, Record)
-                setattr(self, inflection.underscore(key), records)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-    def json(self):
-        return jsons.dump(self)
 
-class Record:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'standingsType':
-                mlbapi.object.setobjattr(self, key, value)
-            elif key == 'league':
-                mlbapi.object.setobjattr(self, key, value, League)
-            elif key == 'division':
-                mlbapi.object.setobjattr(self, key, value, Division)
-            elif key == 'sport':
-                mlbapi.object.setobjattr(self, key, value, Sport)
-            elif key == 'teamRecords':
-                team_records = mlbapi.object.listofobjs(value, TeamRecord)
-                setattr(self, inflection.underscore(key), team_records)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class League(MLBModel):
+    pass
 
-class StandingsType:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
 
-class League:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+class Division(MLBModel):
+    pass
 
-class Division:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
 
-class Sport:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+class Sport(MLBModel):
+    pass
 
-class TeamRecord:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'team':
-                mlbapi.object.setobjattr(self, key, value, Team)
-            elif key == 'streak':
-                mlbapi.object.setobjattr(self, key, value, Streak)
-            elif key == 'leagueRecord':
-                mlbapi.object.setobjattr(self, key, value, LeagueRecord)
-            elif key == 'records':
-                mlbapi.object.setobjattr(self, key, value, Records)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
-class Streak:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+class Streak(MLBModel):
+    pass
 
-class LeagueRecord:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'league':
-                mlbapi.object.setobjattr(self, key, value, League)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
-class Records:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'splitRecords':
-                split_records = mlbapi.object.listofobjs(value, SplitRecord)
-                setattr(self, inflection.underscore(key), split_records)
-            elif key == 'divisionRecords':
-                division_records = mlbapi.object.listofobjs(value, DivisionRecord)
-                setattr(self, inflection.underscore(key), division_records)
-            elif key == 'overallRecords':
-                overall_records = mlbapi.object.listofobjs(value, OverallRecord)
-                setattr(self, inflection.underscore(key), overall_records)
-            elif key == 'leagueRecords':
-                league_records = mlbapi.object.listofobjs(value, LeagueRecord)
-                setattr(self, inflection.underscore(key), league_records)
-            elif key == 'expectedRecords':
-                expected_records = mlbapi.object.listofobjs(value, ExpectedRecord)
-                setattr(self, inflection.underscore(key), expected_records)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class LeagueRecord(MLBModel):
+    league: Optional[League] = None
 
-class SplitRecord:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
 
-class DivisionRecord:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'division':
-                mlbapi.object.setobjattr(self, key, value, Division)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class SplitRecord(MLBModel):
+    pass
 
-class OverallRecord:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
 
-class ExpectedRecord:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+class DivisionRecord(MLBModel):
+    division: Optional[Division] = None
+
+
+class OverallRecord(MLBModel):
+    pass
+
+
+class LeagueRecordEntry(MLBModel):
+    league: Optional[League] = None
+
+
+class ExpectedRecord(MLBModel):
+    pass
+
+
+class Records(MLBModel):
+    split_records: Optional[List[SplitRecord]] = None
+    division_records: Optional[List[DivisionRecord]] = None
+    overall_records: Optional[List[OverallRecord]] = None
+    league_records: Optional[List[LeagueRecordEntry]] = None
+    expected_records: Optional[List[ExpectedRecord]] = None
+
+
+class StandingsType(MLBModel):
+    pass
+
+
+class TeamRecord(MLBModel):
+    team: Optional[Team] = None
+    streak: Optional[Streak] = None
+    league_record: Optional[LeagueRecord] = None
+    records: Optional[Records] = None
+
+
+class StandingsRecord(MLBModel):
+    league: Optional[League] = None
+    division: Optional[Division] = None
+    sport: Optional[Sport] = None
+    team_records: Optional[List[TeamRecord]] = None
+
+
+class Standings(MLBModel):
+    records: Optional[List[StandingsRecord]] = None
+
+
+# Backwards-compatibility alias — tests and external code import 'Record'
+Record = StandingsRecord

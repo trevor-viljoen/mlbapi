@@ -1,19 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from datetime import datetime
-from datetime import timedelta
+"""Pydantic models for the teams object layer."""
 
-import inflection
+from __future__ import annotations
 
-import mlbapi.object
+from typing import List, Optional
+
+from mlbapi.object import MLBModel
 from mlbapi.object.game import Team
 
-class Teams:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'teams':
-                teams = mlbapi.object.listofobjs(value, Team)
-                setattr(self, inflection.underscore(key), teams)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
+class Teams(MLBModel):
+    teams: Optional[List[Team]] = None

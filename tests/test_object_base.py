@@ -22,14 +22,17 @@ class TestSetObjAttr:
         assert obj.jersey_number == 99
 
     def test_sets_int_from_string(self):
+        # v1.0.0: setobjattr is a thin shim — no type coercion; strings stay strings.
+        # Type coercion now belongs in Pydantic field declarations on MLBModel subclasses.
         obj = SimpleObj()
         setobjattr(obj, 'jersey_number', '99')
-        assert obj.jersey_number == 99
+        assert obj.jersey_number == '99'
 
     def test_sets_float_from_string(self):
+        # v1.0.0: setobjattr no longer coerces strings to floats.
         obj = SimpleObj()
         setobjattr(obj, 'batting_avg', '0.315')
-        assert obj.batting_avg == pytest.approx(0.315)
+        assert obj.batting_avg == '0.315'
 
     def test_sets_bool_true(self):
         obj = SimpleObj()
@@ -53,9 +56,11 @@ class TestSetObjAttr:
         assert obj.game_type == 'R'
 
     def test_parses_datetime_string(self):
+        # v1.0.0: setobjattr no longer parses datetime strings; value is stored as-is.
+        # Declare the field as datetime on an MLBModel subclass for automatic parsing.
         obj = SimpleObj()
         setobjattr(obj, 'game_date', '2023-06-01T17:10:00Z')
-        assert isinstance(obj.game_date, datetime)
+        assert obj.game_date == '2023-06-01T17:10:00Z'
 
     def test_ordinal_field_stays_string(self):
         obj = SimpleObj()

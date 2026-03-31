@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlbapi"
-version = "0.2.2"
+version = "1.0.0a1"
 description = "A Python 3 wrapper for the MLB StatsAPI at statsapi.mlb.com"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "MIT"}
@@ -41,9 +41,8 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
     "requests",
-    "python-dateutil",
     "inflection",
-    "jsons",
+    "pydantic>=2.0",
 ]
 
 [project.optional-dependencies]

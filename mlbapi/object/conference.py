@@ -1,21 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the conferences object layer."""
 
-import mlbapi.object
+from __future__ import annotations
 
+from typing import List, Optional
 
-class Conference:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+from mlbapi.object import MLBModel
 
 
-class Conferences:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'conferences':
-                conferences = mlbapi.object.listofobjs(value, Conference)
-                setattr(self, inflection.underscore(key), conferences)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class Conference(MLBModel):
+    pass
+
+
+class Conferences(MLBModel):
+    conferences: Optional[List[Conference]] = None

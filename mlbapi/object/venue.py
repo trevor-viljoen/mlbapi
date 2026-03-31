@@ -1,21 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the venues object layer."""
 
-import mlbapi.object
+from __future__ import annotations
 
+from typing import List, Optional
 
-class Venue:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+from mlbapi.object import MLBModel
 
 
-class Venues:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'venues':
-                venues = mlbapi.object.listofobjs(value, Venue)
-                setattr(self, inflection.underscore(key), venues)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class Venue(MLBModel):
+    pass
+
+
+class Venues(MLBModel):
+    venues: Optional[List[Venue]] = None

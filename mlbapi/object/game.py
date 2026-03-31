@@ -1,466 +1,354 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from datetime import datetime
-from datetime import timedelta
+"""Pydantic models for mlbapi game objects.
+
+All classes inherit from MLBModel which provides:
+- camelCase → snake_case normalisation via _normalise_keys
+- extra="allow" so unknown API fields are stored automatically
+- ClassName(data_dict) positional-arg constructor for backwards compat
+"""
+
+from __future__ import annotations
+
+from typing import Any, List, Optional, Union
 
 import inflection
+from pydantic import computed_field, field_validator, model_validator
 
-import mlbapi.object
+from mlbapi.object import MLBModel
+from mlbapi.object.common import (
+    DivisionRef, LeagueRecordRef, LeagueRef, PersonRef, SportRef, TeamRef,
+    VenueRef,
+)
 
-class Umpire(object):
-    def __init__(self, data):
-        for ass, name in data.items():
-            setattr(self, 'assignment', ass)
-            setattr(self, 'name', name)
 
-class Color(mlbapi.object.Object):
+# ---------------------------------------------------------------------------
+# Low-level shared types
+# ---------------------------------------------------------------------------
+
+class Position(MLBModel):
+    """Fielding position descriptor."""
+
+
+class Status(MLBModel):
+    """Player or game status."""
+
+
+class Venue(MLBModel):
+    """Venue reference with extra detail."""
+
+
+class League(MLBModel):
+    """League reference with extra detail."""
+
+
+class Division(MLBModel):
+    """Division with league/sport nesting."""
+
+
+class Sport(MLBModel):
+    """Sport reference."""
+
+
+class SpringVenue(MLBModel):
     pass
 
-class ColorTimestamps(mlbapi.object.Object):
+
+class SpringLeague(MLBModel):
     pass
 
-class ColorDiff(mlbapi.object.Object):
+
+class Conference(MLBModel):
     pass
 
-class Content(mlbapi.object.Object):
-    def __init__(self, data):
-        self.media = None
-        self.highlights = None
-        self.summary = None
-        self.game_notes = None
 
-class ContextMetrics(mlbapi.object.Object):
+class Content(MLBModel):
     pass
 
-class LineScore(mlbapi.object.Object):
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'innings':
-                innings = mlbapi.object.listofobjs(value, Inning)
-                setattr(self, inflection.underscore(key), innings)
-            elif key == 'teams':
-                setattr(self, inflection.underscore(key), Teams(value))
-            elif key == 'defense':
-                setattr(self, inflection.underscore(key), Defense(value))
-            elif key == 'offense':
-                setattr(self, inflection.underscore(key), Offense(value))
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
-class Inning(mlbapi.object.Object):
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'home':
-                setattr(self, inflection.underscore(key), Home(value))
-            elif key == 'away':
-                setattr(self, inflection.underscore(key), Away(value))
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class Home(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Away(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Defense:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'pitcher':
-                setattr(self, inflection.underscore(key), Pitcher(value))
-            elif key == 'catcher':
-                setattr(self, inflection.underscore(key), Catcher(value))
-            elif key == 'first':
-                setattr(self, inflection.underscore(key), First(value))
-            elif key == 'second':
-                setattr(self, inflection.underscore(key), Second(value))
-            elif key == 'third':
-                setattr(self, inflection.underscore(key), Third(value))
-            elif key == 'shortstop':
-                setattr(self, inflection.underscore(key), Shortstop(value))
-            elif key == 'left':
-                setattr(self, inflection.underscore(key), Left(value))
-            elif key == 'center':
-                setattr(self, inflection.underscore(key), Center(value))
-            elif key == 'right':
-                setattr(self, inflection.underscore(key), Right(value))
-            elif key == 'team':
-                setattr(self, inflection.underscore(key), Team(value))
-            elif key == 'batter':
-                setattr(self, inflection.underscore(key), Batter(value))
-            elif key == 'onDeck':
-                setattr(self, inflection.underscore(key), OnDeck(value))
-            elif key == 'inHole':
-                setattr(self, inflection.underscore(key), InHole(value))
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class Pitcher(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Catcher(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class First(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Second(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Third(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Shortstop(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Left(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Center(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Right(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Team(Defense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Offense(mlbapi.object.Object):
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'batter':
-                setattr(self, inflection.underscore(key), Batter(value))
-            elif key == 'onDeck':
-                setattr(self, inflection.underscore(key), OnDeck(value))
-            elif key == 'inHole':
-                setattr(self, inflection.underscore(key), InHole(value))
-            elif key == 'pitcher':
-                setattr(self, inflection.underscore(key), Pitcher(value))
-            elif key == 'first':
-                if value:
-                    setattr(self, inflection.underscore(key), First(value))
-                else:
-                    setattr(self, inflection.underscore(key), None)
-            elif key == 'second':
-                if value:
-                    setattr(self, inflection.underscore(key), Second(value))
-                else:
-                    setattr(self, inflection.underscore(key), None)
-            elif key == 'third':
-                if value:
-                    setattr(self, inflection.underscore(key), Third(value))
-                else:
-                    setattr(self, inflection.underscore(key), None)
-            elif key == 'team':
-                setattr(self, inflection.underscore(key), (value))
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class Batter(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class OnDeck(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class InHole(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Pitcher(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class First(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Second(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Third(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Team(Offense):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Live(mlbapi.object.Object):
+class GameStatus(MLBModel):
     pass
 
-class LiveDiff(mlbapi.object.Object):
+
+class AllPositions(MLBModel):
     pass
 
-class LiveTimestamps(mlbapi.object.Object):
+
+# ---------------------------------------------------------------------------
+# Stats
+# ---------------------------------------------------------------------------
+
+class Batting(MLBModel):
     pass
 
-class PlayByPlay(mlbapi.object.Object):
+
+class Pitching(MLBModel):
     pass
 
-class WinProbability(mlbapi.object.Object):
+
+class Fielding(MLBModel):
     pass
 
-class BoxScore(mlbapi.object.Object):
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'teams':
-                mlbapi.object.setobjattr(self, key, value, Teams)
-            elif key == 'officials':
-                officials = mlbapi.object.listofobjs(value, Official)
-                setattr(self, inflection.underscore(key), officials)
-            elif key == 'info':
-                info = mlbapi.object.listofobjs(value, Info)
-                setattr(self, inflection.underscore(key), info)
-            elif key == 'pitchingNotes':
-                if value:
-                    setattr(self, inflection.underscore(key), value)
-                else:
-                    setattr(self, inflection.underscore(key), None)
 
-class Teams:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'away':
-                mlbapi.object.setobjattr(self, key, value, AwayTeam)
-            elif key == 'home':
-                mlbapi.object.setobjattr(self, key, value, HomeTeam)
+class Stats(MLBModel):
+    batting: Optional[Batting] = None
+    pitching: Optional[Pitching] = None
+    fielding: Optional[Fielding] = None
 
+    @field_validator('batting', mode='before')
+    @classmethod
+    def _empty_batting(cls, v: Any) -> Any:
+        return None if (v is not None and not v) else v
 
-class Team:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'status':
-                mlbapi.object.setobjattr(self, key, value, Status)
-            elif key == 'teams':
-                mlbapi.object.setobjattr(self, key, value, Teams)
-            elif key == 'venue':
-                mlbapi.object.setobjattr(self, key, value, Venue)
-            elif key == 'springVenue':
-                mlbapi.object.setobjattr(self, key, value, SpringVenue)
-            elif key == 'content':
-                mlbapi.object.setobjattr(self, key, value, Content)
-            elif key == 'league':
-                mlbapi.object.setobjattr(self, key, value, League)
-            elif key == 'division':
-                mlbapi.object.setobjattr(self, key, value, Division)
-            elif key == 'sport':
-                mlbapi.object.setobjattr(self, key, value, Sport)
-            elif key == 'record':
-                mlbapi.object.setobjattr(self, key, value, Record)
-            elif key == 'springLeague':
-                mlbapi.object.setobjattr(self, key, value, SpringLeague)
-            elif key == 'conference':
-                mlbapi.object.setobjattr(self, key, value, Conference)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class AwayTeam:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'team':
-                mlbapi.object.setobjattr(self, key, value, Team)
-            elif key == 'teamStats':
-                mlbapi.object.setobjattr(self, key, value, TeamStats)
-            elif key in ['batters', 'pitchers', 'bench', 'bullpen', 'battingOrder']:
-                setattr(self, inflection.underscore(key), value)
-            elif key == 'info': # FIX
-                setattr(self, inflection.underscore(key), None)
-            elif key == 'note': # FIX
-                setattr(self, inflection.underscore(key), None)
-            elif key == 'players':
-                players = []
-                for k, v in value.items():
-                    players.append(Player(v))
-                setattr(self, 'players', players)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class HomeTeam:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'team':
-                mlbapi.object.setobjattr(self, key, value, Team)
-            elif key == 'teamStats':
-                mlbapi.object.setobjattr(self, key, value, TeamStats)
-            elif key in ['batters', 'pitchers', 'bench', 'bullpen', 'battingOrder']:
-                setattr(self, inflection.underscore(key), value)
-            elif key == 'info': # FIX
-                setattr(self, inflection.underscore(key), None)
-            elif key == 'note': # FIX
-                setattr(self, inflection.underscore(key), None)
-            elif key == 'players':
-                players = []
-                for k, v in value.items():
-                    players.append(Player(v))
-                setattr(self, 'players', players)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class Stats:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'batting':
-                if value:
-                    mlbapi.object.setobjattr(self, key, value, Batting)
-                else:
-                    setattr(self, 'batting', None)
-            elif key == 'pitching':
-                mlbapi.object.setobjattr(self, key, value, Pitching)
-            elif key == 'fielding':
-                mlbapi.object.setobjattr(self, key, value, Fielding)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class TeamStats(Stats):
-    def __init__(self, data):
-        super().__init__(data)
 
 class SeasonStats(Stats):
-    def __init__(self, data):
-        super().__init__(data)
+    pass
 
-class Official:
-    def __init__(self, data):
-        for key, value in data['official'].items():
-            mlbapi.object.setobjattr(self, key, value)
 
-class Player:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'person':
-                mlbapi.object.setobjattr(self, key, value, Person)
-            elif key == 'position':
-                mlbapi.object.setobjattr(self, key, value, Position)
-            elif key == 'allPositions':
-                all_positions = mlbapi.object.listofobjs(value, AllPositions)
-                setattr(self, inflection.underscore(key), all_positions)
-            elif key == 'stats':
-                mlbapi.object.setobjattr(self, key, value, Stats)
-            elif key == 'status':
-                mlbapi.object.setobjattr(self, key, value, Status)
-            elif key == 'seasonStats':
-                mlbapi.object.setobjattr(self, key, value, SeasonStats)
-            elif key == 'gameStatus':
-                mlbapi.object.setobjattr(self, key, value, GameStatus)
+class TeamStats(Stats):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Person / Player
+# ---------------------------------------------------------------------------
+
+class Person(MLBModel):
+    pass
+
+
+class Player(MLBModel):
+    person: Optional[Person] = None
+    position: Optional[Position] = None
+    all_positions: Optional[List[AllPositions]] = None
+    stats: Optional[Stats] = None
+    season_stats: Optional[SeasonStats] = None
+    status: Optional[Status] = None
+    game_status: Optional[GameStatus] = None
+
+
+# ---------------------------------------------------------------------------
+# Defense / Offense
+# ---------------------------------------------------------------------------
+
+class Defense(MLBModel):
+    pitcher: Optional[PersonRef] = None
+    catcher: Optional[PersonRef] = None
+    first: Optional[PersonRef] = None
+    second: Optional[PersonRef] = None
+    third: Optional[PersonRef] = None
+    shortstop: Optional[PersonRef] = None
+    left: Optional[PersonRef] = None
+    center: Optional[PersonRef] = None
+    right: Optional[PersonRef] = None
+    batter: Optional[PersonRef] = None
+    on_deck: Optional[PersonRef] = None
+    in_hole: Optional[PersonRef] = None
+    team: Optional[TeamRef] = None
+
+
+class Offense(MLBModel):
+    batter: Optional[PersonRef] = None
+    on_deck: Optional[PersonRef] = None
+    in_hole: Optional[PersonRef] = None
+    pitcher: Optional[PersonRef] = None
+    first: Optional[PersonRef] = None
+    second: Optional[PersonRef] = None
+    third: Optional[PersonRef] = None
+    team: Optional[TeamRef] = None
+
+
+# ---------------------------------------------------------------------------
+# LineScore
+# ---------------------------------------------------------------------------
+
+class Home(MLBModel):
+    """Half-inning or team totals for the home side."""
+
+
+class Away(MLBModel):
+    """Half-inning or team totals for the away side."""
+
+
+class Inning(MLBModel):
+    home: Optional[Home] = None
+    away: Optional[Away] = None
+
+
+class LineScoreTeams(MLBModel):
+    home: Optional[Home] = None
+    away: Optional[Away] = None
+
+
+class LineScore(MLBModel):
+    innings: Optional[List[Inning]] = None
+    teams: Optional[LineScoreTeams] = None
+    defense: Optional[Defense] = None
+    offense: Optional[Offense] = None
+
+
+# ---------------------------------------------------------------------------
+# Record / LeagueRecord
+# ---------------------------------------------------------------------------
+
+class LeagueRecord(MLBModel):
+    league: Optional[LeagueRef] = None
+
+
+class Records(MLBModel):
+    pass
+
+
+class Record(MLBModel):
+    league_record: Optional[LeagueRecord] = None
+    records: Optional[Any] = None
+
+    @field_validator('records', mode='before')
+    @classmethod
+    def _empty_records(cls, v: Any) -> Any:
+        if isinstance(v, dict) and not v:
+            return None
+        return v
+
+
+# ---------------------------------------------------------------------------
+# Team (full object — not just a reference)
+# ---------------------------------------------------------------------------
+
+class Team(MLBModel):
+    status: Optional[Status] = None
+    venue: Optional[Venue] = None
+    spring_venue: Optional[SpringVenue] = None
+    league: Optional[League] = None
+    division: Optional[Division] = None
+    sport: Optional[Sport] = None
+    spring_league: Optional[SpringLeague] = None
+    conference: Optional[Conference] = None
+    record: Optional[Record] = None
+    content: Optional[Content] = None
+
+
+# ---------------------------------------------------------------------------
+# BoxScore teams
+# ---------------------------------------------------------------------------
+
+class BoxScoreTeam(MLBModel):
+    """Away or home team entry inside a boxscore."""
+
+    team: Optional[Team] = None
+    team_stats: Optional[TeamStats] = None
+    players: Optional[List[Player]] = None
+    batters: Optional[List[int]] = None
+    pitchers: Optional[List[int]] = None
+    bench: Optional[List[int]] = None
+    bullpen: Optional[List[int]] = None
+    batting_order: Optional[List[int]] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def _normalise_keys(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        result: dict = {}
+        for k, v in data.items():
+            if k == 'players':
+                # API returns {"ID592450": {...}, ...} — convert to a list
+                result['players'] = list(v.values()) if isinstance(v, dict) else (v or [])
+            elif k in ('info', 'note'):
+                # placeholder fields — drop for now
+                pass
             else:
-                mlbapi.object.setobjattr(self, key, value)
-
-class Position(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class AllPositions(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class GameStatus(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Batting(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Pitching(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Fielding(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Person(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Status(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Venue(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class SpringVenue(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class League(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class SpringLeague(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class LeagueRecord(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Conference(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
-
-class Records:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
-
-class Division:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'league':
-                mlbapi.object.setobjattr(self, key, value, League)
-            elif key == 'sport':
-                mlbapi.object.setobjattr(self, key, value, Sport)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+                result[inflection.underscore(k)] = v
+        return result
 
 
-class Sport(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
+# Aliases kept for backwards compatibility and test imports
+AwayTeam = BoxScoreTeam
+HomeTeam = BoxScoreTeam
 
-class Record:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'leagueRecord':
-                mlbapi.object.setobjattr(self, key, value, LeagueRecord)
-            elif key == 'records':
-                if value:
-                    mlbapi.object.setobjattr(self, key, value, Records)
-                else:
-                    setattr(self, key, None)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
-class Info(mlbapi.object.Object):
-    def __init__(self, data):
-        info = None
-        k = None
-        v = None
-        for key, value in data.items():
-            if key == 'label':
-                k = value
-            elif key == 'value':
-                v = value
-            if v:
-                setattr(self, 'info', (k, v))
-            else:
-                setattr(self, 'info', (k))
+class Teams(MLBModel):
+    """Teams pair — used for both BoxScore and LineScore contexts."""
+    away: Optional[BoxScoreTeam] = None
+    home: Optional[BoxScoreTeam] = None
 
+
+# ---------------------------------------------------------------------------
+# Official / Info
+# ---------------------------------------------------------------------------
+
+class Official(MLBModel):
+    official: Optional[PersonRef] = None
+    official_type: Optional[str] = None
+
+
+class Info(MLBModel):
+    label: Optional[str] = None
+    value: Optional[str] = None
+
+    @computed_field
+    @property
+    def info(self) -> Union[str, tuple, None]:
+        if self.value:
+            return (self.label, self.value)
+        return self.label
+
+
+# ---------------------------------------------------------------------------
+# BoxScore
+# ---------------------------------------------------------------------------
+
+class BoxScore(MLBModel):
+    teams: Optional[Teams] = None
+    officials: Optional[List[Official]] = None
+    info: Optional[List[Info]] = None
+    pitching_notes: Optional[List[str]] = None
+
+    @field_validator('pitching_notes', mode='before')
+    @classmethod
+    def _empty_pitching_notes(cls, v: Any) -> Any:
+        if isinstance(v, list) and not v:
+            return None
+        return v
+
+
+# ---------------------------------------------------------------------------
+# Misc game classes (kept for import compatibility)
+# ---------------------------------------------------------------------------
+
+class Umpire(MLBModel):
+    pass
+
+
+class Color(MLBModel):
+    pass
+
+
+class ColorTimestamps(MLBModel):
+    pass
+
+
+class ColorDiff(MLBModel):
+    pass
+
+
+class ContextMetrics(MLBModel):
+    pass
+
+
+class Live(MLBModel):
+    pass
+
+
+class LiveDiff(MLBModel):
+    pass
+
+
+class LiveTimestamps(MLBModel):
+    pass
+
+
+class PlayByPlay(MLBModel):
+    pass
+
+
+class WinProbability(MLBModel):
+    pass

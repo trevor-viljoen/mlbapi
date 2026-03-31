@@ -1,19 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from datetime import datetime
-from datetime import timedelta
+"""Pydantic models for the divisions object layer."""
 
-import inflection
+from __future__ import annotations
 
-import mlbapi.object
+from typing import List, Optional
+
+from mlbapi.object import MLBModel
 from mlbapi.object.game import Division
 
-class Divisions:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'divisions':
-                divisions = mlbapi.object.listofobjs(value, Division)
-                setattr(self, inflection.underscore(key), divisions)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
+class Divisions(MLBModel):
+    divisions: Optional[List[Division]] = None

@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the home run derby object layer."""
 
-import mlbapi.object
+from __future__ import annotations
+
+from mlbapi.object import MLBModel
 
 
-class HomeRunDerby:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+class HomeRunDerby(MLBModel):
+    pass

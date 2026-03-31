@@ -1,24 +1,16 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the jobs object layer."""
 
-import mlbapi.object
+from __future__ import annotations
 
+from typing import List, Optional
 
-class Job:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+from mlbapi.object import MLBModel
 
 
-class Jobs:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'roster':
-                jobs = mlbapi.object.listofobjs(value, Job)
-                setattr(self, inflection.underscore(key), jobs)
-            elif key == 'jobList':
-                jobs = mlbapi.object.listofobjs(value, Job)
-                setattr(self, inflection.underscore(key), jobs)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class Job(MLBModel):
+    pass
+
+
+class Jobs(MLBModel):
+    roster: Optional[List[Job]] = None
+    job_list: Optional[List[Job]] = None

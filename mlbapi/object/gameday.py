@@ -1,95 +1,66 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-#
-import inflection
-import mlbapi.object
+"""Pydantic models for the schedule/gameday object layer."""
 
-class Schedule:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'dates':
-                dates = mlbapi.object.listofobjs(value, Date)
-                setattr(self, inflection.underscore(key), dates)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+from __future__ import annotations
 
-class Date:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'games':
-                games = mlbapi.object.listofobjs(value, Game)
-                setattr(self, inflection.underscore(key), games)
-            elif key == 'events':
-                events = mlbapi.object.listofobjs(value, Event)
-                setattr(self, inflection.underscore(key), events)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+from typing import List, Optional
 
-class Event(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
+from mlbapi.object import MLBModel
+from mlbapi.object.common import LeagueRecordRef
 
-class Game:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'status':
-                mlbapi.object.setobjattr(self, key, value, Status)
-            elif key == 'teams':
-                mlbapi.object.setobjattr(self, key, value, Teams)
-            elif key == 'venue':
-                mlbapi.object.setobjattr(self, key, value, Venue)
-            elif key == 'content':
-                mlbapi.object.setobjattr(self, key, value, Content)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
-class Teams:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'home':
-                mlbapi.object.setobjattr(self, key, value, HomeTeam)
-            elif key == 'away':
-                mlbapi.object.setobjattr(self, key, value, AwayTeam)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class Status(MLBModel):
+    pass
 
-class HomeTeam:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'leagueRecord':
-                mlbapi.object.setobjattr(self, key, value, LeagueRecord)
-            elif key == 'team':
-                mlbapi.object.setobjattr(self, key, value, Team)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
 
-class AwayTeam(mlbapi.object.Object):
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'leagueRecord':
-                mlbapi.object.setobjattr(self, key, value, LeagueRecord)
-            elif key == 'team':
-                mlbapi.object.setobjattr(self, key, value, Team)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class LeagueRecord(MLBModel):
+    pass
 
-class Team(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
 
-class Status(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
+class Venue(MLBModel):
+    pass
 
-class LeagueRecord(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
 
-class Venue(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
+class Content(MLBModel):
+    pass
 
-class Content(mlbapi.object.Object):
-    def __init__(self, data):
-        super().__init__(data)
+
+class Team(MLBModel):
+    pass
+
+
+class ScheduleTeam(MLBModel):
+    league_record: Optional[LeagueRecord] = None
+    team: Optional[Team] = None
+
+
+class AwayTeam(ScheduleTeam):
+    pass
+
+
+class HomeTeam(ScheduleTeam):
+    pass
+
+
+class Teams(MLBModel):
+    away: Optional[AwayTeam] = None
+    home: Optional[HomeTeam] = None
+
+
+class Event(MLBModel):
+    pass
+
+
+class Game(MLBModel):
+    status: Optional[Status] = None
+    teams: Optional[Teams] = None
+    venue: Optional[Venue] = None
+    content: Optional[Content] = None
+
+
+class Date(MLBModel):
+    games: Optional[List[Game]] = None
+    events: Optional[List[Event]] = None
+
+
+class Schedule(MLBModel):
+    dates: Optional[List[Date]] = None

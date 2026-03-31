@@ -1,23 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the stats object layer."""
 
-import mlbapi.object
+from __future__ import annotations
 
-
-class Stats:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'stats':
-                setattr(self, inflection.underscore(key), value)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+from mlbapi.object import MLBModel
 
 
-class StatsLeaders:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'leagueLeaders':
-                setattr(self, inflection.underscore(key), value)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class Stats(MLBModel):
+    pass
+
+
+class StatsLeaders(MLBModel):
+    pass

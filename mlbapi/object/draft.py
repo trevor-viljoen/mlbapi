@@ -1,22 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the draft object layer."""
 
-import mlbapi.object
+from __future__ import annotations
 
-
-class DraftPick:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+from mlbapi.object import MLBModel
 
 
-class Draft:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'drafts':
-                setattr(self, inflection.underscore(key), value)
-            elif key == 'rounds':
-                setattr(self, inflection.underscore(key), value)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class DraftPick(MLBModel):
+    pass
+
+
+class Draft(MLBModel):
+    pass

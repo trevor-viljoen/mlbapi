@@ -1,21 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the awards object layer."""
 
-import mlbapi.object
+from __future__ import annotations
 
+from typing import List, Optional
 
-class Award:
-    def __init__(self, data):
-        for key, value in data.items():
-            mlbapi.object.setobjattr(self, key, value)
+from mlbapi.object import MLBModel
 
 
-class Awards:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'awards':
-                awards = mlbapi.object.listofobjs(value, Award)
-                setattr(self, inflection.underscore(key), awards)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class Award(MLBModel):
+    pass
+
+
+class Awards(MLBModel):
+    awards: Optional[List[Award]] = None

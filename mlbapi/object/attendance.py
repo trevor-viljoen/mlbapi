@@ -1,16 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import inflection
+"""Pydantic models for the attendance object layer."""
 
-import mlbapi.object
+from __future__ import annotations
+
+from mlbapi.object import MLBModel
 
 
-class Attendance:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == 'records':
-                setattr(self, inflection.underscore(key), value)
-            elif key == 'aggregateTotals':
-                setattr(self, inflection.underscore(key), value)
-            else:
-                mlbapi.object.setobjattr(self, key, value)
+class Attendance(MLBModel):
+    pass

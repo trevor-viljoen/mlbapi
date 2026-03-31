@@ -124,8 +124,9 @@ class TestSeasons:
         assert len(s.seasons) == 1
 
     def test_season_has_id(self):
+        # The MLB API returns seasonId as a string; Pydantic stores it as-is.
         s = Seasons(SEASONS_DATA)
-        assert s.seasons[0].season_id == 2023
+        assert s.seasons[0].season_id == '2023'
 
     def test_season_has_wildcard(self):
         s = Seasons(SEASONS_DATA)
