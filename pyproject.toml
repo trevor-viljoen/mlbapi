@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlbapi"
-version = "0.2.1"
+version = "0.2.2"
 description = "A Python 3 wrapper for the MLB StatsAPI at statsapi.mlb.com"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "MIT"}
