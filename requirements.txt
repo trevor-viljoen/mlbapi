@@ -1,5 +1,4 @@
 --index-url https://pypi.python.org/simple
 requests
-python-dateutil
 inflection
-jsons
+pydantic>=2.0

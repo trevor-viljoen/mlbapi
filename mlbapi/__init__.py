@@ -13,10 +13,13 @@ from mlbapi.exceptions import (
     ObjectNotFoundException,
     ParameterException,
 )
+from mlbapi.teams import TEAMS, team_id
 from mlbapi.version import __version__
 
 __all__ = [
     'Client',
+    'TEAMS',
+    'team_id',
     '__version__',
     'MLBAPIException',
     'RequestException',
