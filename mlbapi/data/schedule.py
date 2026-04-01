@@ -17,7 +17,7 @@ VALID_SCHEDULE_PARAMS = ['calendar_types', 'team_id', 'league_id', 'sport_id',
                          'game_pk', 'game_pks', 'event_ids', 'venue_ids',
                          'performer_ids', 'game_type', 'game_types', 'season',
                          'seasons', 'date', 'start_date', 'end_date', 'timecode',
-                         'use_latest_games', 'opponent_id', 'fields']
+                         'use_latest_games', 'opponent_id', 'hydrate', 'fields']
 
 def get_schedule(**kwargs): # pylint: disable=too-many-branches
     """This endpoint allows you to pull shedules. The API parameter is camel cased. The
