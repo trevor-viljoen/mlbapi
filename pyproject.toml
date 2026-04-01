@@ -65,3 +65,6 @@ Funding = "https://paypal.me/trevorviljoen"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["mlbapi*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

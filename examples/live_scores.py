@@ -12,7 +12,6 @@ Controls
     ← / →             Previous / next date (Schedule)
     ↑ / ↓             Navigate game rows
     Enter             Open box score for selected game
-    l                 Open linescore for selected game
     r                 Refresh data
     q                 Quit
 
@@ -75,8 +74,10 @@ def _score(team_side) -> str:
 class BoxScoreScreen(ModalScreen):
     """Full-screen modal showing a game's box score."""
 
-    BINDINGS = [Binding("escape", "dismiss", "Close", show=False),
-                Binding("b", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close", show=False),
+        Binding("b", "dismiss", "Close"),
+    ]
 
     def __init__(self, game_pk: int, client: Client) -> None:
         super().__init__()
@@ -105,15 +106,15 @@ class BoxScoreScreen(ModalScreen):
             box = self._client.boxscore(self._game_pk)
             line = self._client.linescore(self._game_pk)
         except MLBAPIException as exc:
-            self.app.call_from_thread(self._show_error, str(exc))
+            self.app.call_from_thread(lambda: self._show_error(str(exc)))
             return
-        self.app.call_from_thread(self._render, box, line)
+        self.app.call_from_thread(lambda: self._populate(box, line))
 
     def _show_error(self, msg: str) -> None:
         self.query_one("#bs-error", Static).update(f"[red]{msg}[/red]")
         self.query_one("#bs-title", Label).update("[red]Error loading box score[/red]")
 
-    def _render(self, box, line) -> None:
+    def _populate(self, box, line) -> None:
         away_name = _attr(box, "teams", "away", "team", "name", default="Away")
         home_name = _attr(box, "teams", "home", "team", "name", default="Home")
         away_r = _attr(box, "teams", "away", "team_stats", "batting", "runs", default="?")
@@ -181,7 +182,6 @@ class BoxScoreScreen(ModalScreen):
             home_name,
         )
 
-        # Linescore by inning
         ls_table = self.query_one("#bs-linescore", DataTable)
         ls_table.clear(columns=True)
         innings = getattr(line, "innings", []) or []
@@ -207,7 +207,8 @@ class BoxScoreScreen(ModalScreen):
         info_items = getattr(box, "info", []) or []
         info_lines = [
             f"[dim]{_attr(i, 'label', default='')}:[/dim] {_attr(i, 'value', default='')}"
-            for i in info_items if _attr(i, "label")
+            for i in info_items
+            if _attr(i, "label")
         ]
         if info_lines:
             self.query_one("#bs-info", Static).update("\n".join(info_lines))
@@ -220,7 +221,7 @@ class BoxScoreScreen(ModalScreen):
 class SchedulePane(Widget):
     """Manages the schedule DataTable and date navigation."""
 
-    # init=False so the watcher doesn't fire before compose()/on_mount()
+    # init=False prevents the watcher from firing before on_mount()
     current_date: reactive[date] = reactive(date.today, init=False)
 
     def __init__(self, client: Client, initial_date: date) -> None:
@@ -238,7 +239,7 @@ class SchedulePane(Widget):
         self.query_one("#sched-table", DataTable).add_columns(
             "Away", "R", "Home", "R", "Status", "Inning", "Venue",
         )
-        # Set reactive after DOM is ready — this triggers watch_current_date
+        # Assign after DOM is ready; triggers watch_current_date
         self.current_date = self._initial_date
 
     def watch_current_date(self, d: date) -> None:
@@ -249,24 +250,28 @@ class SchedulePane(Widget):
 
     @work(thread=True)
     def _load(self) -> None:
+        # Capture date before entering thread — reactive reads from threads
+        # can race with main-thread writes.
+        target_date = self.current_date
         self.app.call_from_thread(
-            self.query_one("#sched-status", Label).update, "[dim]Loading…[/dim]"
+            lambda: self.query_one("#sched-status", Label).update("[dim]Loading…[/dim]")
         )
         try:
             schedule = self._client.schedule(
-                date=self.current_date.strftime("%Y-%m-%d"),
+                date=target_date.strftime("%Y-%m-%d"),
                 sport_id=1,
                 hydrate="linescore",
             )
         except MLBAPIException as exc:
             self.app.call_from_thread(
-                self.query_one("#sched-status", Label).update,
-                f"[red]Error: {exc}[/red]",
+                lambda: self.query_one("#sched-status", Label).update(
+                    f"[red]Error: {exc}[/red]"
+                )
             )
             return
-        self.app.call_from_thread(self._render, schedule)
+        self.app.call_from_thread(lambda: self._populate(schedule))
 
-    def _render(self, schedule) -> None:
+    def _populate(self, schedule) -> None:
         table = self.query_one("#sched-table", DataTable)
         table.clear()
         self._games = []
@@ -365,20 +370,21 @@ class StandingsPane(Widget):
     @work(thread=True)
     def _load(self) -> None:
         self.app.call_from_thread(
-            self.query_one("#std-status", Label).update, "[dim]Loading…[/dim]"
+            lambda: self.query_one("#std-status", Label).update("[dim]Loading…[/dim]")
         )
         try:
             al = self._client.standings(league_id=103)
             nl = self._client.standings(league_id=104)
         except MLBAPIException as exc:
             self.app.call_from_thread(
-                self.query_one("#std-status", Label).update,
-                f"[red]Error: {exc}[/red]",
+                lambda: self.query_one("#std-status", Label).update(
+                    f"[red]Error: {exc}[/red]"
+                )
             )
             return
-        self.app.call_from_thread(self._render, al, nl)
+        self.app.call_from_thread(lambda: self._populate(al, nl))
 
-    def _render(self, al, nl) -> None:
+    def _populate(self, al, nl) -> None:
         self.query_one("#std-status", Label).update("")
         self._fill_table(
             self.query_one("#std-table-al", DataTable),
@@ -394,7 +400,7 @@ class StandingsPane(Widget):
         for record in records:
             div_name = _attr(record, "division", "name", default="")
             table.add_row(f"[bold]{div_name}[/bold]", "", "", "", "", "")
-            for tr in (getattr(record, "team_records", []) or []):
+            for tr in getattr(record, "team_records", []) or []:
                 table.add_row(
                     f"  {_attr(tr, 'team', 'name', default='—')}",
                     str(_attr(tr, "wins", default="")),
@@ -458,13 +464,12 @@ class MLBTerminal(App):
         Binding("[", "prev_date", "← Day"),
         Binding("]", "next_date", "Day →"),
         Binding("enter", "open_boxscore", "Box score"),
-        Binding("l", "open_boxscore", "Linescore", show=False),
     ]
 
-    def __init__(self, initial_date: date) -> None:
+    def __init__(self, initial_date: date, client: Optional[Client] = None) -> None:
         super().__init__()
         self._initial_date = initial_date
-        self._client = Client()
+        self._client = client or Client()
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
