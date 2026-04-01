@@ -297,8 +297,8 @@ async def test_boxscore_screen_opens_for_selected_game():
     box.teams.home.team_stats.batting.runs = 5
     box.teams.away.batters = []
     box.teams.home.batters = []
-    box.teams.away.players = {}
-    box.teams.home.players = {}
+    box.teams.away.players = []
+    box.teams.home.players = []
     box.info = []
 
     line = MagicMock()
@@ -336,8 +336,8 @@ async def test_boxscore_screen_closes_on_escape():
     box.teams.home.team_stats.batting.runs = 5
     box.teams.away.batters = []
     box.teams.home.batters = []
-    box.teams.away.players = {}
-    box.teams.home.players = {}
+    box.teams.away.players = []
+    box.teams.home.players = []
     box.info = []
 
     line = MagicMock()

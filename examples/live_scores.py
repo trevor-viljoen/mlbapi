@@ -137,10 +137,16 @@ class BoxScoreScreen(ModalScreen):
         def build_batting(table: DataTable, team_data, team_name: str) -> None:
             table.clear(columns=True)
             table.add_columns(team_name, "AB", "R", "H", "RBI", "BB", "SO", "AVG")
-            players_map = getattr(team_data, "players", {}) or {}
+            # players is a List[Player] (the model converts the API dict to a list)
+            players_list = getattr(team_data, "players", []) or []
+            players_by_id = {
+                _attr(p, "person", "id", default=None): p
+                for p in players_list
+                if _attr(p, "person", "id", default=None) is not None
+            }
             batter_ids = getattr(team_data, "batters", []) or []
             for pid in batter_ids:
-                p = players_map.get(f"ID{pid}") or players_map.get(str(pid))
+                p = players_by_id.get(pid)
                 if p is None:
                     continue
                 name = _attr(p, "person", "full_name", default=str(pid))
