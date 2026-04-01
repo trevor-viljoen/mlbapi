@@ -21,6 +21,7 @@ All responses are Pydantic v2 models: attribute access, type safety, and IDE aut
   - [Teams](endpoints/teams.md)
   - [Divisions](endpoints/divisions.md)
   - [Live Feed](endpoints/live.md)
+- [Interactive Terminal](terminal.md) — `examples/live_scores.py` TUI for live scores
 - [Testing](testing.md) — writing tests, mocking the client
 - [Migration from mlbgame](migration.md) — upgrading from the legacy library
 - [Contributing](contributing.md) — adding endpoints, code standards

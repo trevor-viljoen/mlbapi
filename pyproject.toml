@@ -51,6 +51,9 @@ dev = [
     "pytest-cov",
     "coveralls",
 ]
+examples = [
+    "textual>=0.40",
+]
 
 [project.urls]
 Homepage = "https://github.com/trevor-viljoen/mlbapi"
