@@ -90,6 +90,40 @@ BASE_URL = 'https://statsapi.mlb.com/api'
 class Client:
     """Configurable MLB StatsAPI client.
 
+    The client is the sole entry point for all API calls.  Instantiate once,
+    reuse everywhere.
+
+    Args:
+        base_url: Override the API base URL (default: ``https://statsapi.mlb.com/api``).
+        timeout:  HTTP timeout in seconds applied to every request.
+        session:  A :class:`requests.Session` to use for all HTTP calls.
+                  Inject one to add custom headers, auth, retry adapters, or
+                  for testing without patching ``requests.get``.
+
+    Examples::
+
+        # Basic usage
+        from mlbapi import Client
+        client = Client()
+        schedule = client.schedule(date='2024-06-01')
+
+        # Configured client
+        client = Client(timeout=30)
+        client = Client(base_url='https://my-proxy/api', timeout=10)
+
+        # Inject a session for custom headers, retry logic, etc.
+        import requests
+        from requests.adapters import HTTPAdapter, Retry
+        s = requests.Session()
+        s.mount('https://', HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1)))
+        client = Client(session=s)
+
+        # Context manager — session created/closed automatically
+        with Client() as client:
+            box = client.boxscore(716463)
+    """
+    """Configurable MLB StatsAPI client.
+
     Args:
         base_url: Override the default ``https://statsapi.mlb.com/api`` base.
         timeout: HTTP timeout in seconds passed to every request.
@@ -109,6 +143,36 @@ class Client:
         self._base_url = base_url
         self._timeout = timeout
         self._session = session
+        self._owns_session = False  # True only when we created the session
+
+    # ------------------------------------------------------------------
+    # Context manager — auto-creates and closes a Session
+    # ------------------------------------------------------------------
+
+    def __enter__(self) -> 'Client':
+        if self._session is None:
+            self._session = requests.Session()
+            self._session.headers.update({
+                'User-Agent': f'mlbapi/{version.__version__}',
+                'Accept-encoding': 'gzip',
+                'Connection': 'close',
+            })
+            self._owns_session = True
+        return self
+
+    def __exit__(self, *_) -> None:
+        if self._owns_session and self._session is not None:
+            self._session.close()
+            self._session = None
+            self._owns_session = False
+
+    def __repr__(self) -> str:
+        parts = [f'base_url={self._base_url!r}']
+        if self._timeout is not None:
+            parts.append(f'timeout={self._timeout!r}')
+        if self._session is not None:
+            parts.append('session=<Session>')
+        return f'Client({", ".join(parts)})'
 
     # ------------------------------------------------------------------
     # Internal HTTP
