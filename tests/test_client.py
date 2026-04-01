@@ -11,11 +11,11 @@ from mlbapi import (
     RequestException,
     ObjectNotFoundException,
 )
-from mlbapi.object.game import BoxScore, LineScore
-from mlbapi.object.gameday import Schedule
-from mlbapi.object.standings import Standings
-from mlbapi.object.team import Teams
-from mlbapi.object.division import Divisions
+from mlbapi.models.game import BoxScore, LineScore
+from mlbapi.models.schedule import Schedule
+from mlbapi.models.standings import Standings
+from mlbapi.models.team import Teams
+from mlbapi.models.division import Divisions
 from tests.conftest import (
     BOXSCORE_DATA, LINESCORE_DATA, SCHEDULE_DATA,
     STANDINGS_DATA, TEAMS_DATA, DIVISIONS_DATA,

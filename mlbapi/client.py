@@ -1,24 +1,27 @@
 """MLB StatsAPI client.
 
-This is the primary entry point for making API calls.  All network I/O flows
-through :class:`Client`; the module-level convenience functions in
-``mlbapi/__init__.py`` delegate to a shared default instance.
+All network I/O flows through :class:`Client`, the sole public entry point.
 
 Usage::
 
-    # Module-level convenience — zero configuration required
-    import mlbapi
-    schedule = mlbapi.schedule(date='2024-06-01')
+    from mlbapi import Client
 
-    # Configured client
-    client = mlbapi.Client(timeout=30)
+    # Basic
+    client = Client()
     schedule = client.schedule(date='2024-06-01')
+
+    # Configured
+    client = Client(timeout=30)
 
     # Inject a requests.Session (custom headers, retries, auth, …)
     import requests
     s = requests.Session()
     s.headers['X-Custom-Header'] = 'value'
-    client = mlbapi.Client(session=s)
+    client = Client(session=s)
+
+    # Context manager — session lifecycle managed automatically
+    with Client() as client:
+        box = client.boxscore(716463)
 """
 
 from __future__ import annotations
@@ -47,7 +50,7 @@ from mlbapi.data.game import (
     VALID_PLAY_BY_PLAY_PARAMS,
     VALID_WIN_PROBABILITY_PARAMS,
 )
-from mlbapi.data.gameday import VALID_SCHEDULE_PARAMS
+from mlbapi.data.schedule import VALID_SCHEDULE_PARAMS
 from mlbapi.data.standings import VALID_STANDINGS_PARAMS
 from mlbapi.data.team import VALID_TEAMS_PARAMS
 from mlbapi.data.division import VALID_DIVISION_PARAMS
@@ -68,21 +71,21 @@ from mlbapi.data.transactions import VALID_TRANSACTIONS_PARAMS
 from mlbapi.data.meta import get_meta
 
 # Model classes
-from mlbapi.object.attendance import Attendance
-from mlbapi.object.awards import Awards
-from mlbapi.object.conference import Conferences
-from mlbapi.object.division import Divisions
-from mlbapi.object.draft import Draft
-from mlbapi.object.game import BoxScore, LineScore
-from mlbapi.object.gameday import Schedule
-from mlbapi.object.homerunderby import HomeRunDerby
-from mlbapi.object.jobs import Jobs
-from mlbapi.object.season import Seasons
-from mlbapi.object.standings import Standings
-from mlbapi.object.stats import Stats, StatsLeaders
-from mlbapi.object.team import Teams
-from mlbapi.object.transactions import Transactions
-from mlbapi.object.venue import Venues
+from mlbapi.models.attendance import Attendance
+from mlbapi.models.awards import Awards
+from mlbapi.models.conference import Conferences
+from mlbapi.models.division import Divisions
+from mlbapi.models.draft import Draft
+from mlbapi.models.game import BoxScore, LineScore
+from mlbapi.models.schedule import Schedule
+from mlbapi.models.homerunderby import HomeRunDerby
+from mlbapi.models.jobs import Jobs
+from mlbapi.models.season import Seasons
+from mlbapi.models.standings import Standings
+from mlbapi.models.stats import Stats, StatsLeaders
+from mlbapi.models.team import Teams
+from mlbapi.models.transactions import Transactions
+from mlbapi.models.venue import Venues
 
 BASE_URL = 'https://statsapi.mlb.com/api'
 
@@ -229,6 +232,33 @@ class Client:
                           api_version=api_version)
         params = to_api_keys(kwargs) if kwargs else None
         return self._get(url, params=params)
+
+    def get(self, path: str, **params) -> dict:
+        """Raw GET against the MLB StatsAPI — returns the parsed JSON dict.
+
+        Use this for endpoints not yet wrapped by a dedicated method, or when
+        you need the raw response data directly.
+
+        Args:
+            path: URL path appended to the base URL, e.g. ``'/v1/sports'`` or
+                  an absolute URL.
+            **params: Query-string parameters forwarded as-is (no camelCase
+                      conversion is performed).
+
+        Returns:
+            The parsed JSON response as a plain Python dict.
+
+        Example::
+
+            client = Client()
+            data = client.get('/v1/sports')
+            data = client.get('/v1/people/660271', hydrate='stats(group=[hitting],type=[career])')
+        """
+        if path.startswith('http'):
+            url = path
+        else:
+            url = self._base_url + path
+        return self._get(url, params=params if params else None)
 
     # ------------------------------------------------------------------
     # Game endpoints
