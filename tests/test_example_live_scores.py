@@ -20,7 +20,7 @@ from examples.live_scores import (
     MLBTerminal,
     SchedulePane,
     StandingsPane,
-    BoxScoreScreen,
+    GameScreen,
     _attr,
     _score,
 )
@@ -94,6 +94,7 @@ def _mock_client(
     nl_standings=None,
     boxscore=None,
     linescore=None,
+    play_by_play=None,
 ) -> MagicMock:
     """Return a mock Client with configurable return values."""
     client = MagicMock()
@@ -107,6 +108,7 @@ def _mock_client(
     )
     client.boxscore.return_value = boxscore or MagicMock()
     client.linescore.return_value = linescore or MagicMock()
+    client.play_by_play.return_value = play_by_play or {"allPlays": [], "scoringPlays": []}
     return client
 
 
@@ -302,8 +304,8 @@ async def test_enter_with_no_game_selected_does_not_crash():
         await pilot.pause(0.3)
         await pilot.press("enter")
         await pilot.pause(0.1)
-        # No BoxScoreScreen should be pushed
-        assert not app.screen_stack or not isinstance(app.screen, BoxScoreScreen)
+        # No GameScreen should be pushed
+        assert not app.screen_stack or not isinstance(app.screen, GameScreen)
 
 
 @pytest.mark.asyncio
@@ -343,7 +345,7 @@ async def test_boxscore_screen_opens_for_selected_game():
         await pilot.pause(0.5)
         await pilot.press("enter")
         await pilot.pause(0.5)
-        assert isinstance(app.screen, BoxScoreScreen)
+        assert isinstance(app.screen, GameScreen)
 
 
 @pytest.mark.asyncio
@@ -382,10 +384,10 @@ async def test_boxscore_screen_closes_on_escape():
         await pilot.pause(0.5)
         await pilot.press("enter")
         await pilot.pause(0.5)
-        assert isinstance(app.screen, BoxScoreScreen)
+        assert isinstance(app.screen, GameScreen)
         await pilot.press("escape")
         await pilot.pause(0.2)
-        assert not isinstance(app.screen, BoxScoreScreen)
+        assert not isinstance(app.screen, GameScreen)
 
 
 @pytest.mark.asyncio
