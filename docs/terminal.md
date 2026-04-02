@@ -33,12 +33,15 @@ python examples/live_scores.py --date 2024-06-01
 |---|---|
 | `Tab` / `Shift+Tab` | Switch between Schedule and Standings tabs |
 | `↑` / `↓` | Navigate game rows |
-| `←` / `→` or `[` / `]` | Previous / next date |
+| `Shift+←` / `Shift+→` | Previous / next date |
+| `[` / `]` | Previous / next date (alternative) |
 | `Enter` | Open box score for the selected game |
-| `l` | Open box score / linescore for the selected game |
 | `r` | Refresh data |
 | `q` | Quit |
 | `Esc` / `b` | Close box score (return to schedule) |
+
+> **Note:** Plain `←`/`→` are consumed by the game table for cell navigation.
+> Use `Shift+←`/`Shift+→` or `[`/`]` to change dates.
 
 ---
 

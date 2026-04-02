@@ -225,7 +225,7 @@ async def test_date_label_shows_initial_date():
 
 
 @pytest.mark.asyncio
-async def test_next_date_advances_one_day():
+async def test_next_date_bracket_key():
     app = MLBTerminal(FIXED_DATE, client=_mock_client())
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause(0.2)
@@ -237,7 +237,7 @@ async def test_next_date_advances_one_day():
 
 
 @pytest.mark.asyncio
-async def test_prev_date_goes_back_one_day():
+async def test_prev_date_bracket_key():
     app = MLBTerminal(FIXED_DATE, client=_mock_client())
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause(0.2)
@@ -245,6 +245,28 @@ async def test_prev_date_goes_back_one_day():
         await pilot.pause(0.1)
         pane = app.query_one(SchedulePane)
         assert pane.current_date == date(2024, 5, 31)
+
+
+@pytest.mark.asyncio
+async def test_next_date_shift_right():
+    """shift+right should advance date; plain right is consumed by DataTable."""
+    app = MLBTerminal(FIXED_DATE, client=_mock_client())
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause(0.2)
+        await pilot.press("shift+right")
+        await pilot.pause(0.1)
+        assert app.query_one(SchedulePane).current_date == date(2024, 6, 2)
+
+
+@pytest.mark.asyncio
+async def test_prev_date_shift_left():
+    """shift+left should go back; plain left is consumed by DataTable."""
+    app = MLBTerminal(FIXED_DATE, client=_mock_client())
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause(0.2)
+        await pilot.press("shift+left")
+        await pilot.pause(0.1)
+        assert app.query_one(SchedulePane).current_date == date(2024, 5, 31)
 
 
 @pytest.mark.asyncio

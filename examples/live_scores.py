@@ -9,7 +9,8 @@ Usage
 Controls
 --------
     Tab / Shift+Tab   Switch between Schedule and Standings
-    ← / →             Previous / next date (Schedule)
+    Shift+← / Shift+→  Previous / next date (Schedule)
+    [ / ]             Previous / next date (alternative)
     ↑ / ↓             Navigate game rows
     Enter             Open box score for selected game
     r                 Refresh data
@@ -465,10 +466,10 @@ class MLBTerminal(App):
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
-        Binding("left",  "prev_date", "Prev day", show=False),
-        Binding("right", "next_date", "Next day", show=False),
-        Binding("[", "prev_date", "← Day"),
-        Binding("]", "next_date", "Day →"),
+        Binding("shift+left",  "prev_date", "← Day"),
+        Binding("shift+right", "next_date", "Day →"),
+        Binding("[", "prev_date", "← Day", show=False),
+        Binding("]", "next_date", "Day →", show=False),
         Binding("enter", "open_boxscore", "Box score"),
     ]
 
