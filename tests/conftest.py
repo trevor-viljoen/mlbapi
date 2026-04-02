@@ -313,3 +313,135 @@ DIVISIONS_DATA = {
         }
     ]
 }
+
+CONFERENCES_DATA = {
+    'conferences': [
+        {'id': 203, 'name': 'American League', 'link': '/api/v1/conferences/203',
+         'abbreviation': 'AL', 'shortName': 'AL', 'nameShort': 'AL',
+         'league': {'id': 103}, 'sport': {'id': 1}, 'active': True},
+    ]
+}
+
+SEASONS_DATA = {
+    'seasons': [
+        {'seasonId': '2024', 'hasWildcard': True, 'preSeasonStartDate': '2024-02-01',
+         'seasonStartDate': '2024-03-28', 'regularSeasonStartDate': '2024-03-28',
+         'regularSeasonEndDate': '2024-09-29', 'seasonEndDate': '2024-11-05',
+         'offseasonStartDate': '2024-11-06', 'offSeasonEndDate': '2025-01-01',
+         'seasonLevelGamedayType': 'P', 'gameType': 'R', 'active': True},
+    ]
+}
+
+VENUES_DATA = {
+    'venues': [
+        {'id': 3313, 'name': 'Yankee Stadium', 'link': '/api/v1/venues/3313',
+         'location': {'address1': '1 E 161st St', 'city': 'Bronx', 'state': 'New York',
+                      'stateAbbrev': 'NY', 'postalCode': '10451',
+                      'defaultCoordinates': {'latitude': 40.829659, 'longitude': -73.926186},
+                      'country': 'USA', 'phone': '(718) 293-6000'},
+         'timezone': {'id': 'America/New_York', 'offset': -5, 'tz': 'EST'},
+         'fieldInfo': {'capacity': 47309, 'turfType': 'Grass', 'roofType': 'Open',
+                       'leftLine': 318, 'left': 318, 'leftCenter': 399,
+                       'center': 408, 'rightCenter': 385, 'rightLine': 314},
+         'active': True},
+    ]
+}
+
+DRAFT_DATA = {
+    'drafts': {
+        'rounds': [
+            {'roundNumber': 1, 'round': '1',
+             'picks': [
+                 {'bisPlayerId': 933733, 'pickRound': '1', 'pickNumber': 1, 'roundPickNumber': 1,
+                  'rank': 1, 'pickValue': '9234300', 'signingBonus': '9234300',
+                  'home': {'city': 'Mableton', 'state': 'Georgia', 'country': 'USA'},
+                  'scoutingReport': 'Top overall prospect.',
+                  'person': {'id': 933733, 'fullName': 'Paul Skenes', 'link': '/api/v1/people/933733'},
+                  'team': {'id': 134, 'name': 'Pittsburgh Pirates', 'link': '/api/v1/teams/134'},
+                  'year': '2023', 'isPass': False, 'isDraft': True},
+             ]},
+        ]
+    }
+}
+
+STATS_DATA = {
+    'stats': [
+        {'type': {'displayName': 'season'}, 'group': {'displayName': 'hitting'},
+         'splits': [
+             {'season': '2024',
+              'stat': {'gamesPlayed': 130, 'atBats': 450, 'hits': 135,
+                       'homeRuns': 28, 'rbi': 90, 'avg': '.300', 'ops': '.920'},
+              'player': {'id': 660271, 'fullName': 'Juan Soto', 'link': '/api/v1/people/660271'},
+              'team': {'id': 147, 'name': 'New York Yankees', 'link': '/api/v1/teams/147'}}
+         ]}
+    ]
+}
+
+STATS_LEADERS_DATA = {
+    'leagueLeaders': [
+        {'leaderCategory': 'homeRuns', 'season': '2024',
+         'gameType': {'id': 'R', 'description': 'Regular Season'},
+         'leaders': [
+             {'rank': 1, 'value': '58', 'person': {'id': 592450, 'fullName': 'Aaron Judge'},
+              'team': {'id': 147, 'name': 'New York Yankees'}, 'season': '2024'},
+         ]}
+    ]
+}
+
+HOMERUNDERBY_DATA = {
+    'id': 716463,
+    'bracket': {'rounds': []},
+    'pool': {'players': []},
+}
+
+ATTENDANCE_DATA = {
+    'records': [
+        {'openingDay': '2024-03-28', 'attendanceRecords': [
+            {'gameType': {'id': 'R', 'description': 'Regular Season'},
+             'totalAway': 3000000, 'totalHome': 3200000, 'totalOpeningDay': 42000,
+             'openingDayTotal': 42000, 'gamesTotal': 162, 'gamesAwayTotal': 81,
+             'gamesHomeTotal': 81, 'year': '2024',
+             'team': {'id': 147, 'name': 'New York Yankees', 'link': '/api/v1/teams/147'}},
+        ]}
+    ]
+}
+
+AWARDS_DATA = {
+    'awards': [
+        {'id': 'MLBHOF', 'name': 'Baseball Hall of Fame', 'description': 'Hall of Fame inductee',
+         'link': '/api/v1/awards/MLBHOF', 'sport': {'id': 1}, 'league': {}},
+    ]
+}
+
+JOBS_DATA = {
+    'roster': [
+        {'id': 427151, 'fullName': 'Joe West', 'link': '/api/v1/people/427151',
+         'jobId': 'UMP', 'title': 'Home Plate', 'jerseyNumber': '22'},
+    ]
+}
+
+TRANSACTIONS_DATA = {
+    'transactions': [
+        {'id': 1234, 'person': {'id': 660271, 'fullName': 'Juan Soto'},
+         'toTeam': {'id': 147, 'name': 'New York Yankees'},
+         'fromTeam': {'id': 135, 'name': 'San Diego Padres'},
+         'date': '2024-01-01', 'effectiveDate': '2024-01-01',
+         'resolutionDate': '2024-01-01', 'typeCode': 'TR', 'typeDesc': 'Trade',
+         'description': 'Traded Juan Soto to New York Yankees'},
+    ]
+}
+
+META_DATA = {
+    'leagueLeaderTypes': [
+        {'lookupName': 'homeRuns', 'description': 'Home Runs'},
+        {'lookupName': 'battingAverage', 'description': 'Batting Average'},
+    ]
+}
+
+SPORT_DATA = {
+    'sports': [
+        {'id': 1, 'code': 'mlb', 'link': '/api/v1/sports/1',
+         'name': 'Major League Baseball', 'abbreviation': 'MLB',
+         'sortOrder': 11, 'activeStatus': True},
+    ]
+}

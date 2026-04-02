@@ -350,3 +350,219 @@ class TestErrorHandling:
         session.get.side_effect = requests.exceptions.ConnectionError('network down')
         with pytest.raises(RequestException):
             Client(session=session).boxscore(716463)
+
+# ---------------------------------------------------------------------------
+# Additional endpoint tests (conferences, seasons, venues, draft, stats,
+# homerunderby, attendance, awards, jobs, transactions, meta, sports)
+# ---------------------------------------------------------------------------
+
+from mlbapi.models.conference import Conferences
+from mlbapi.models.season import Seasons
+from mlbapi.models.venue import Venues
+from mlbapi.models.draft import Draft
+from mlbapi.models.stats import Stats, StatsLeaders
+from mlbapi.models.homerunderby import HomeRunDerby
+from mlbapi.models.attendance import Attendance
+from mlbapi.models.awards import Awards
+from mlbapi.models.jobs import Jobs
+from mlbapi.models.transactions import Transactions
+from tests.conftest import (
+    CONFERENCES_DATA, SEASONS_DATA, VENUES_DATA, DRAFT_DATA,
+    STATS_DATA, STATS_LEADERS_DATA, HOMERUNDERBY_DATA,
+    ATTENDANCE_DATA, AWARDS_DATA, JOBS_DATA, TRANSACTIONS_DATA,
+    META_DATA, SPORT_DATA,
+)
+
+
+class TestConferences:
+    def test_returns_conferences(self):
+        assert isinstance(_client(CONFERENCES_DATA).conferences(), Conferences)
+
+    def test_conference_count(self):
+        assert len(_client(CONFERENCES_DATA).conferences().conferences) == 1
+
+    def test_conference_name(self):
+        result = _client(CONFERENCES_DATA).conferences()
+        assert result.conferences[0].name == 'American League'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(CONFERENCES_DATA).conferences(not_valid='x')
+
+
+class TestSeasons:
+    def test_returns_seasons(self):
+        assert isinstance(_client(SEASONS_DATA).seasons(), Seasons)
+
+    def test_season_count(self):
+        assert len(_client(SEASONS_DATA).seasons().seasons) == 1
+
+    def test_all_seasons(self):
+        assert isinstance(_client(SEASONS_DATA).all_seasons(), Seasons)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(SEASONS_DATA).seasons(not_valid='x')
+
+
+class TestVenues:
+    def test_returns_venues(self):
+        assert isinstance(_client(VENUES_DATA).venues(), Venues)
+
+    def test_venue_count(self):
+        assert len(_client(VENUES_DATA).venues().venues) == 1
+
+    def test_venue_name(self):
+        assert _client(VENUES_DATA).venues().venues[0].name == 'Yankee Stadium'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(VENUES_DATA).venues(not_valid='x')
+
+
+class TestDraft:
+    def test_returns_draft(self):
+        assert isinstance(_client(DRAFT_DATA).draft(2023), Draft)
+
+    def test_draft_prospects(self):
+        assert isinstance(_client(DRAFT_DATA).draft_prospects(), Draft)
+
+    def test_draft_latest(self):
+        assert isinstance(_client(DRAFT_DATA).draft_latest(2023), Draft)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(DRAFT_DATA).draft(2023, not_valid='x')
+
+
+class TestStats:
+    def test_returns_stats(self):
+        assert isinstance(_client(STATS_DATA).stats(), Stats)
+
+    def test_stats_leaders(self):
+        assert isinstance(_client(STATS_LEADERS_DATA).stats_leaders(), StatsLeaders)
+
+    def test_stats_streaks(self):
+        assert isinstance(_client(STATS_DATA).stats_streaks(), Stats)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(STATS_DATA).stats(not_valid='x')
+
+    def test_leaders_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(STATS_LEADERS_DATA).stats_leaders(not_valid='x')
+
+
+class TestHomeRunDerby:
+    def test_returns_homerunderby(self):
+        assert isinstance(_client(HOMERUNDERBY_DATA).homerunderby(716463), HomeRunDerby)
+
+    def test_homerunderby_bracket(self):
+        assert isinstance(_client(HOMERUNDERBY_DATA).homerunderby_bracket(716463), HomeRunDerby)
+
+    def test_homerunderby_pool(self):
+        assert isinstance(_client(HOMERUNDERBY_DATA).homerunderby_pool(716463), HomeRunDerby)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(HOMERUNDERBY_DATA).homerunderby(716463, not_valid='x')
+
+
+class TestAttendance:
+    def test_returns_attendance(self):
+        assert isinstance(_client(ATTENDANCE_DATA).attendance(), Attendance)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(ATTENDANCE_DATA).attendance(not_valid='x')
+
+
+class TestAwards:
+    def test_returns_awards(self):
+        assert isinstance(_client(AWARDS_DATA).awards(), Awards)
+
+    def test_award_recipients(self):
+        assert isinstance(_client(AWARDS_DATA).award_recipients('MLBHOF'), Awards)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(AWARDS_DATA).awards(not_valid='x')
+
+
+class TestJobs:
+    def test_returns_jobs(self):
+        assert isinstance(_client(JOBS_DATA).jobs(), Jobs)
+
+    def test_umpires(self):
+        assert isinstance(_client(JOBS_DATA).umpires(), Jobs)
+
+    def test_datacasters(self):
+        assert isinstance(_client(JOBS_DATA).datacasters(), Jobs)
+
+    def test_official_scorers(self):
+        assert isinstance(_client(JOBS_DATA).official_scorers(), Jobs)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(JOBS_DATA).jobs(not_valid='x')
+
+
+class TestTransactions:
+    def test_returns_transactions(self):
+        assert isinstance(_client(TRANSACTIONS_DATA).transactions(), Transactions)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TRANSACTIONS_DATA).transactions(not_valid='x')
+
+
+class TestMeta:
+    def test_returns_dict(self):
+        with patch('mlbapi.data.meta.request', return_value=META_DATA):
+            result = _client(META_DATA).meta('leagueLeaderTypes')
+        assert isinstance(result, dict)
+
+    def test_meta_content(self):
+        with patch('mlbapi.data.meta.request', return_value=META_DATA):
+            result = _client(META_DATA).meta('leagueLeaderTypes')
+        assert 'leagueLeaderTypes' in result
+
+    def test_invalid_meta_type_raises(self):
+        with pytest.raises(ParameterException):
+            _client(META_DATA).meta('notAValidType')
+
+
+class TestSports:
+    def test_returns_dict(self):
+        result = _client(SPORT_DATA).sports()
+        assert isinstance(result, dict)
+
+    def test_sport_count(self):
+        result = _client(SPORT_DATA).sports()
+        assert len(result['sports']) == 1
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(SPORT_DATA).sports(not_valid='x')
+
+
+class TestClientGet:
+    def test_returns_dict(self):
+        result = _client({'sports': []}).get('/v1/sports')
+        assert isinstance(result, dict)
+
+    def test_passes_params(self):
+        session = MagicMock(spec=requests.Session)
+        session.get.return_value = _mock_response({'sports': []})
+        Client(session=session).get('/v1/sports', sportId=1)
+        _, kwargs = session.get.call_args
+        assert kwargs['params'] == {'sportId': 1}
+
+    def test_absolute_url_passed_through(self):
+        session = MagicMock(spec=requests.Session)
+        session.get.return_value = _mock_response({})
+        url = 'https://statsapi.mlb.com/api/v1/sports'
+        Client(session=session).get(url)
+        args, _ = session.get.call_args
+        assert args[0] == url

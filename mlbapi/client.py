@@ -69,6 +69,7 @@ from mlbapi.data.awards import VALID_AWARDS_PARAMS
 from mlbapi.data.jobs import VALID_JOBS_PARAMS
 from mlbapi.data.transactions import VALID_TRANSACTIONS_PARAMS
 from mlbapi.data.meta import get_meta
+from mlbapi.data.sport import VALID_SPORTS_PARAMS
 
 # Model classes
 from mlbapi.models.attendance import Attendance
@@ -516,6 +517,10 @@ class Client:
     # ------------------------------------------------------------------
     # Meta (lookup tables)
     # ------------------------------------------------------------------
+
+    def sports(self, **kwargs) -> dict:
+        """Sports information."""
+        return self._request(endpoint.SPORTS, valid_params=VALID_SPORTS_PARAMS, **kwargs)
 
     def meta(self, meta_type: str) -> dict:
         """Lookup table data for valid parameter values.
