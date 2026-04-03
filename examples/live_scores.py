@@ -93,13 +93,14 @@ def _pips(filled: int, total: int, filled_char: str, empty_char: str,
 
 
 def _base_diamond(first: bool, second: bool, third: bool) -> str:
-    """Return a 3-line Unicode base-path diamond."""
+    """Return a 2-line base diamond (no home plate — scoring = off bases).
+
+    Layout:  col 2 = 2B  (2-space indent)
+             col 0 = 3B, col 4 = 1B  (3 spaces between, midpoint = col 2) ✓
+    """
     on  = "[bold yellow]◆[/bold yellow]"
     off = "[dim]◇[/dim]"
-    b1 = on if first  else off
-    b2 = on if second else off
-    b3 = on if third  else off
-    return f"   {b2}\n{b3}   {b1}\n   [dim]◇[/dim]"
+    return f"  {on if second else off}\n{on if third else off}   {on if first else off}"
 
 
 # ---------------------------------------------------------------------------
@@ -159,9 +160,11 @@ class BasesCount(Static):
         self._prev_bases = current
 
         diamond = _base_diamond(first, second, third)
-        b = _pips(balls,   4, "⬤", "○", "green",  "dim")
-        s = _pips(strikes, 3, "⬤", "○", "red",    "dim")
-        o = _pips(outs,    3, "⬤", "○", "yellow", "dim")
+        # 3B / 2S / 2O: the 4th ball = walk, 3rd strike = K, 3rd out = end of inning —
+        # all reset immediately, so we never need to show the final pip filled.
+        b = _pips(min(balls,   3), 3, "●", "○", "green",  "dim")
+        s = _pips(min(strikes, 2), 2, "●", "○", "red",    "dim")
+        o = _pips(min(outs,    2), 2, "●", "○", "yellow", "dim")
 
         count_line = f"B {b}  S {s}  O {o}"
         self.update(f"{diamond}\n\n{count_line}")
@@ -240,9 +243,9 @@ class BoxScoreTable(Widget):
     """Batting lineup with stats for one team."""
 
     DEFAULT_CSS = """
-    BoxScoreTable { height: 1fr; }
+    BoxScoreTable { height: auto; }
     BoxScoreTable #bs-title { padding: 0 1; text-style: bold; background: $panel; }
-    BoxScoreTable DataTable { height: 1fr; }
+    BoxScoreTable DataTable { height: auto; }
     """
 
     def compose(self) -> ComposeResult:
@@ -298,18 +301,79 @@ class BoxScoreTable(Widget):
             )
 
 
+class PitchingTable(Widget):
+    """Pitching line for one team."""
+
+    DEFAULT_CSS = """
+    PitchingTable { height: auto; }
+    PitchingTable #pt-title { padding: 0 1; text-style: bold; background: $panel; }
+    PitchingTable DataTable { height: auto; }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Label("PITCHING", id="pt-title")
+        yield DataTable(id="pt-table", show_cursor=False, zebra_stripes=True)
+
+    def on_mount(self) -> None:
+        self.query_one("#pt-table", DataTable).add_columns(
+            "Pitcher", "IP", "H", "R", "ER", "BB", "K", "ERA"
+        )
+
+    def populate(self, box, side: str) -> None:
+        team_obj = _attr(box, "teams", side, default=None)
+        if team_obj is None:
+            return
+        team_name = _attr(team_obj, "team", "name", default=side.upper())
+        self.query_one("#pt-title", Label).update(f"[bold]{team_name} PITCHING[/bold]")
+
+        players_list = getattr(team_obj, "players", None) or []
+        player_map: dict = {}
+        for p in players_list:
+            pid = _attr(p, "person", "id", default=None)
+            if pid is not None:
+                player_map[pid] = p
+
+        pitchers = getattr(team_obj, "pitchers", None) or []
+        if not isinstance(pitchers, list):
+            return
+
+        table = self.query_one("#pt-table", DataTable)
+        table.clear()
+        for pid in pitchers:
+            player = player_map.get(pid)
+            if not player:
+                continue
+            name = _attr(player, "person", "full_name", default="—")
+            pit  = _attr(player, "stats", "pitching", default=None)
+            ip   = _attr(pit, "innings_pitched", default="-")
+            h    = _attr(pit, "hits",             default="-")
+            r    = _attr(pit, "runs",             default="-")
+            er   = _attr(pit, "earned_runs",      default="-")
+            bb   = _attr(pit, "base_on_balls",    default="-")
+            k    = _attr(pit, "strike_outs",      default="-")
+            era  = _attr(pit, "era",              default="-")
+            parts = name.rsplit(" ", 1)
+            short = f"{parts[0][0]}. {parts[1]}" if len(parts) == 2 else name
+            table.add_row(short[:18], str(ip), str(h), str(r), str(er), str(bb), str(k), str(era))
+
+
 class BoxScorePane(Widget):
-    """Away and home batting stats stacked vertically."""
+    """Away and home batting + pitching stats, scrollable."""
 
     DEFAULT_CSS = "BoxScorePane { height: 1fr; }"
 
     def compose(self) -> ComposeResult:
-        yield BoxScoreTable(id="bs-away")
-        yield BoxScoreTable(id="bs-home")
+        with ScrollableContainer():
+            yield BoxScoreTable(id="bs-away")
+            yield PitchingTable(id="bp-away")
+            yield BoxScoreTable(id="bs-home")
+            yield PitchingTable(id="bp-home")
 
     def populate(self, box) -> None:
         self.query_one("#bs-away", BoxScoreTable).populate(box, "away")
+        self.query_one("#bp-away", PitchingTable).populate(box, "away")
         self.query_one("#bs-home", BoxScoreTable).populate(box, "home")
+        self.query_one("#bp-home", PitchingTable).populate(box, "home")
 
 
 # ---------------------------------------------------------------------------
@@ -323,8 +387,9 @@ class GameScreen(ModalScreen):
         Binding("escape", "dismiss",      "Back",      show=False),
         Binding("b",      "dismiss",      "Back"),
         Binding("r",      "refresh_game", "Refresh"),
-        Binding("1",      "show_plays",   "Plays",     show=False),
+        Binding("1",      "show_plays",   "Half Inn.", show=False),
         Binding("2",      "show_box",     "Box Score", show=False),
+        Binding("3",      "show_full",    "Full PBP",  show=False),
     ]
 
     DEFAULT_CSS = """
@@ -427,16 +492,18 @@ class GameScreen(ModalScreen):
                     yield LastPlay(id="gs-lastplay")
                 with Vertical(id="gs-right"):
                     with TabbedContent(id="gs-tabs", initial="gs-tab-plays"):
-                        with TabPane("▶ Plays", id="gs-tab-plays"):
+                        with TabPane("▶ Half Inn.", id="gs-tab-plays"):
                             yield PlayFeed(id="gs-playfeed")
-                        with TabPane("📋 Box Score", id="gs-tab-box"):
+                        with TabPane("📋 Box", id="gs-tab-box"):
                             yield BoxScorePane(id="gs-boxscore")
+                        with TabPane("📜 Full PBP", id="gs-tab-full"):
+                            yield PlayFeed(id="gs-fullpbp")
             with Vertical(id="gs-linescore-wrap"):
                 yield DataTable(id="gs-linescore", show_cursor=False)
                 yield Static("", id="gs-info")
             yield Label(
                 "[b][Esc/B][/b] back  [b]R[/b] refresh  "
-                "[b]1[/b] plays  [b]2[/b] box score",
+                "[b]1[/b] half inn.  [b]2[/b] box  [b]3[/b] full pbp",
                 id="gs-footer",
             )
 
@@ -498,25 +565,52 @@ class GameScreen(ModalScreen):
         all_plays   = (pbp or {}).get("allPlays",    []) if isinstance(pbp, dict) else []
         scoring_set = set((pbp or {}).get("scoringPlays", []) if isinstance(pbp, dict) else [])
 
+        # Last play banner
         if all_plays:
-            last      = all_plays[-1]
-            last_idx  = len(all_plays) - 1
-            event = last.get("result", {}).get("event",       "")
-            desc  = last.get("result", {}).get("description", "")
+            last     = all_plays[-1]
+            last_idx = len(all_plays) - 1
             self.query_one("#gs-lastplay", LastPlay).set_play(
-                event, desc, last_idx in scoring_set
+                last.get("result", {}).get("event",       ""),
+                last.get("result", {}).get("description", ""),
+                last_idx in scoring_set,
             )
 
-        recent = all_plays[-20:]
-        offset = max(0, len(all_plays) - 20)
-        adjusted_scoring = {i - offset for i in scoring_set if i >= offset}
+        # Current half-inning filter for the "Half Inn." tab
+        curr_inning = _attr(line, "current_inning", default=None)
+        is_top      = _attr(line, "is_top_inning",  default=None)
+        curr_half   = "top" if is_top else "bottom"
 
-        descs = [
-            p.get("result", {}).get("description", "")
-            for p in recent
-            if p.get("result", {}).get("description")
-        ]
-        self.query_one("#gs-playfeed", PlayFeed).set_plays(descs, adjusted_scoring)
+        if self._abstract == "Live" and curr_inning is not None:
+            half_indexed = [
+                (i, p) for i, p in enumerate(all_plays)
+                if (p.get("about", {}).get("inning") == curr_inning
+                    and p.get("about", {}).get("halfInning", "").lower() == curr_half)
+            ]
+        else:
+            # Final / Preview: show last 15 plays
+            offset = max(0, len(all_plays) - 15)
+            half_indexed = list(enumerate(all_plays))[offset:]
+
+        half_descs: list[str] = []
+        half_scoring: set[int] = set()
+        for orig_idx, play in half_indexed:
+            desc = play.get("result", {}).get("description", "")
+            if desc:
+                if orig_idx in scoring_set:
+                    half_scoring.add(len(half_descs))
+                half_descs.append(desc)
+        self.query_one("#gs-playfeed", PlayFeed).set_plays(half_descs, half_scoring)
+
+        # Full PBP tab — all plays
+        all_descs: list[str] = []
+        all_scoring: set[int] = set()
+        for i, play in enumerate(all_plays):
+            desc = play.get("result", {}).get("description", "")
+            if desc:
+                if i in scoring_set:
+                    all_scoring.add(len(all_descs))
+                all_descs.append(desc)
+        self.query_one("#gs-fullpbp", PlayFeed).set_plays(all_descs, all_scoring)
 
         # --- Box score (batting lineup) ---
         try:
@@ -557,16 +651,15 @@ class GameScreen(ModalScreen):
             self.query_one("#gs-info", Static).update("  ".join(info_lines[:4]))
 
         # --- Auto-refresh timer ---
-        # Cancel any existing timer and restart with the correct interval so
-        # a game transitioning from Preview → Live picks up the faster cadence.
-        if self._refresh_timer is not None:
+        # Set once per state; stop if game finishes.
+        if self._refresh_timer is None:
+            if self._abstract == "Live":
+                self._refresh_timer = self.set_interval(10, self._auto_refresh)
+            elif self._abstract == "Preview":
+                self._refresh_timer = self.set_interval(30, self._auto_refresh)
+        elif self._abstract == "Final" and self._refresh_timer is not None:
             self._refresh_timer.stop()
             self._refresh_timer = None
-        if self._abstract == "Live":
-            self._refresh_timer = self.set_interval(10, self._auto_refresh)
-        elif self._abstract == "Preview":
-            self._refresh_timer = self.set_interval(30, self._auto_refresh)
-        # Final games: no timer
 
     def _flash_score(self) -> None:
         """Briefly highlight the score bug to signal a scoring play."""
@@ -595,6 +688,9 @@ class GameScreen(ModalScreen):
 
     def action_show_box(self) -> None:
         self.query_one("#gs-tabs", TabbedContent).active = "gs-tab-box"
+
+    def action_show_full(self) -> None:
+        self.query_one("#gs-tabs", TabbedContent).active = "gs-tab-full"
 
 
 # ---------------------------------------------------------------------------
