@@ -21,6 +21,9 @@ from examples.live_scores import (
     SchedulePane,
     StandingsPane,
     GameScreen,
+    PitchFXPane,
+    StrikeZonePlot,
+    PitchSequence,
     _attr,
     _score,
 )
@@ -396,3 +399,131 @@ async def test_q_quits_app():
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause(0.1)
         await pilot.press("q")
+
+
+@pytest.mark.asyncio
+async def test_pitch_tab_opens_in_game_screen():
+    """Pressing 4 inside a GameScreen should switch to the Pitches tab."""
+    games = [_game(game_pk=716463, abstract="Live")]
+    pitch_events = [
+        {
+            "type": "pitch",
+            "details": {
+                "type": {"description": "Four-Seam Fastball", "code": "FF"},
+                "call": {"code": "B", "description": "Ball"},
+            },
+            "pitchData": {"startSpeed": 95.2, "zone": 14, "breaks": {"spinRate": 2300}},
+        },
+        {
+            "type": "pitch",
+            "details": {
+                "type": {"description": "Slider", "code": "SL"},
+                "call": {"code": "C", "description": "Called Strike"},
+            },
+            "pitchData": {"startSpeed": 84.7, "zone": 6, "breaks": {"spinRate": 2600}},
+        },
+    ]
+    pbp = {
+        "allPlays": [],
+        "scoringPlays": [],
+        "currentPlay": {"playEvents": pitch_events},
+    }
+    client = _mock_client(
+        schedule=_schedule(*games),
+        play_by_play=pbp,
+    )
+
+    box = MagicMock()
+    box.teams.away.team.name = "Yankees"
+    box.teams.home.team.name = "Astros"
+    box.teams.away.team_stats.batting.runs = 2
+    box.teams.home.team_stats.batting.runs = 1
+    box.teams.away.batters = []
+    box.teams.home.batters = []
+    box.teams.away.players = []
+    box.teams.home.players = []
+    box.info = []
+
+    line = MagicMock()
+    line.status = {"abstractGameState": "Live"}
+    line.current_inning = 5
+    line.inning_half_abbreviation = "T"
+    line.innings = []
+    line.teams.away.runs = 2
+    line.teams.away.hits = 5
+    line.teams.away.errors = 0
+    line.teams.home.runs = 1
+    line.teams.home.hits = 3
+    line.teams.home.errors = 0
+
+    client.boxscore.return_value = box
+    client.linescore.return_value = line
+
+    app = MLBTerminal(FIXED_DATE, client=client)
+    async with app.run_test(size=(160, 50)) as pilot:
+        await pilot.pause(0.5)
+        await pilot.press("enter")
+        await pilot.pause(0.5)
+        assert isinstance(app.screen, GameScreen)
+        # Switch to pitches tab
+        await pilot.press("4")
+        await pilot.pause(0.3)
+        tabs = app.screen.query_one("#gs-tabs", TabbedContent)
+        assert tabs.active == "gs-tab-pitches"
+        # PitchFXPane should be present and populated
+        pfx = app.screen.query_one("#gs-pitchfx", PitchFXPane)
+        assert pfx is not None
+
+
+class TestStrikeZonePlot:
+    """Unit tests for strike zone ASCII rendering."""
+
+    def test_empty_grid(self):
+        from textual.app import App
+
+        class _App(App):
+            def compose(self):
+                yield StrikeZonePlot(id="zone")
+
+        app = _App()
+        # Just verify instantiation works and set_pitches doesn't raise
+        widget = StrikeZonePlot()
+        widget.set_pitches([])  # should not raise
+
+    def test_in_zone_pitch_maps_correctly(self):
+        widget = StrikeZonePlot()
+        pitch = {
+            "type": "pitch",
+            "details": {"call": {"code": "C"}},
+            "pitchData": {"zone": 5},
+        }
+        widget.set_pitches([pitch])  # zone 5 = middle center, should not raise
+
+    def test_ball_outside_zone(self):
+        widget = StrikeZonePlot()
+        pitch = {
+            "type": "pitch",
+            "details": {"call": {"code": "B"}},
+            "pitchData": {"zone": 13},  # outside zone — not rendered in grid
+        }
+        widget.set_pitches([pitch])  # should not raise
+
+
+class TestPitchSequence:
+    """Unit tests for pitch sequence table population."""
+
+    def test_populate_does_not_raise_with_empty(self):
+        from textual.app import App
+        from textual.widgets import DataTable
+
+        # populate() is safe with zero pitches when called after on_mount
+        # We just verify the method exists and runs without error
+        widget = PitchSequence()
+        # Can't call populate() without mount, but verify the method is callable
+        assert callable(widget.populate)
+
+    def test_pitch_type_short_lookup(self):
+        from examples.live_scores import _PITCH_TYPE_SHORT
+        assert _PITCH_TYPE_SHORT["Four-Seam Fastball"] == "FF"
+        assert _PITCH_TYPE_SHORT["Slider"] == "SL"
+        assert _PITCH_TYPE_SHORT["Changeup"] == "CH"

@@ -377,6 +377,146 @@ class BoxScorePane(Widget):
 
 
 # ---------------------------------------------------------------------------
+# Pitch F/X widgets
+# ---------------------------------------------------------------------------
+
+_PITCH_CALL_STYLE: dict[str, str] = {
+    "B": "green",        # Ball
+    "C": "red",          # Called Strike
+    "S": "bold red",     # Swinging Strike
+    "F": "yellow",       # Foul
+    "T": "yellow",       # Foul Tip
+    "X": "dim",          # In Play (out recorded)
+    "D": "bold yellow",  # In Play (no out)
+    "E": "bold yellow",  # In Play (run scored)
+}
+
+_PITCH_CALL_CHAR: dict[str, str] = {
+    "B": "B",  "C": "K",  "S": "S",  "F": "F",
+    "T": "T",  "X": "X",  "D": "H",  "E": "R",
+}
+
+_PITCH_TYPE_SHORT: dict[str, str] = {
+    "Four-Seam Fastball": "FF",
+    "Two-Seam Fastball":  "FT",
+    "Sinker":             "SI",
+    "Cutter":             "FC",
+    "Curveball":          "CU",
+    "Slider":             "SL",
+    "Sweeper":            "SW",
+    "Changeup":           "CH",
+    "Split-Finger":       "FS",
+    "Knuckleball":        "KN",
+    "Fastball":           "FA",
+}
+
+
+class StrikeZonePlot(Static):
+    """3×3 MLB strike zone grid (catcher's view).
+
+    Zone layout:
+        1 | 2 | 3   (top)
+        4 | 5 | 6   (middle)
+        7 | 8 | 9   (bottom)
+    Shows the most-recent pitch call per zone cell.
+    Pitches with zone 11–14 land outside the box (not plotted).
+    """
+
+    DEFAULT_CSS = "StrikeZonePlot { height: auto; padding: 0 0; }"
+
+    def set_pitches(self, pitches: list[dict]) -> None:
+        zone_map: dict[int, str] = {}
+        for p in pitches:
+            pd   = p.get("pitchData") or {}
+            zone = pd.get("zone")
+            code = (p.get("details") or {}).get("call", {}).get("code", "")
+            if zone is not None:
+                try:
+                    zone_map[int(zone)] = code
+                except (ValueError, TypeError):
+                    pass
+
+        def cell(z: int) -> str:
+            code = zone_map.get(z)
+            if code is None:
+                return "[dim] · [/dim]"
+            ch    = _PITCH_CALL_CHAR.get(code, code or "?")
+            style = _PITCH_CALL_STYLE.get(code, "")
+            return f"[{style}] {ch} [/{style}]" if style else f" {ch} "
+
+        rows = [
+            "┌───┬───┬───┐",
+            f"│{cell(1)}│{cell(2)}│{cell(3)}│",
+            "├───┼───┼───┤",
+            f"│{cell(4)}│{cell(5)}│{cell(6)}│",
+            "├───┼───┼───┤",
+            f"│{cell(7)}│{cell(8)}│{cell(9)}│",
+            "└───┴───┴───┘",
+        ]
+        self.update("\n".join(rows))
+
+
+class PitchSequence(Widget):
+    """Current at-bat pitch sequence — number, type, velocity, call."""
+
+    DEFAULT_CSS = """
+    PitchSequence { height: auto; }
+    PitchSequence #ps-title { padding: 0 1; text-style: bold; background: $panel; }
+    PitchSequence DataTable  { height: auto; }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Label("At-Bat Pitches", id="ps-title")
+        yield DataTable(id="ps-table", show_cursor=False, zebra_stripes=True)
+
+    def on_mount(self) -> None:
+        self.query_one("#ps-table", DataTable).add_columns("#", "Type", "MPH", "Call")
+
+    def populate(self, pitches: list[dict]) -> None:
+        table = self.query_one("#ps-table", DataTable)
+        table.clear()
+        for i, p in enumerate(pitches, 1):
+            details    = p.get("details") or {}
+            pitch_type = (details.get("type") or {}).get("description", "")
+            short_type = _PITCH_TYPE_SHORT.get(pitch_type, pitch_type[:4] if pitch_type else "?")
+            pd         = p.get("pitchData") or {}
+            speed_raw  = pd.get("startSpeed")
+            speed      = f"{speed_raw:.1f}" if speed_raw is not None else "—"
+            call_info  = details.get("call") or {}
+            call_code  = call_info.get("code", "")
+            call_desc  = call_info.get("description", call_code)
+            call_ch    = _PITCH_CALL_CHAR.get(call_code, call_code or "?")
+            call_style = _PITCH_CALL_STYLE.get(call_code, "")
+            call_markup = (
+                f"[{call_style}]{call_ch} {call_desc}[/{call_style}]"
+                if call_style else f"{call_ch} {call_desc}"
+            )
+            # Include spin rate if available
+            spin = (pd.get("breaks") or {}).get("spinRate")
+            spin_str = f"  [dim]{spin:.0f}rpm[/dim]" if spin else ""
+            table.add_row(str(i), short_type, speed + spin_str, call_markup)
+
+
+class PitchFXPane(Widget):
+    """Strike zone plot + pitch sequence for the current at-bat."""
+
+    DEFAULT_CSS = "PitchFXPane { height: 1fr; }"
+
+    def compose(self) -> ComposeResult:
+        with ScrollableContainer():
+            yield Label(
+                "[bold]Strike Zone[/bold]  [dim](catcher's view · last pitch/zone)[/dim]",
+                id="pfx-zone-title",
+            )
+            yield StrikeZonePlot(id="pfx-zone")
+            yield PitchSequence(id="pfx-seq")
+
+    def update_pitches(self, pitches: list[dict]) -> None:
+        self.query_one("#pfx-zone", StrikeZonePlot).set_pitches(pitches)
+        self.query_one("#pfx-seq", PitchSequence).populate(pitches)
+
+
+# ---------------------------------------------------------------------------
 # Game Screen
 # ---------------------------------------------------------------------------
 
@@ -390,6 +530,7 @@ class GameScreen(ModalScreen):
         Binding("1",      "show_plays",   "Half Inn.", show=False),
         Binding("2",      "show_box",     "Box Score", show=False),
         Binding("3",      "show_full",    "Full PBP",  show=False),
+        Binding("4",      "show_pitches", "Pitches",   show=False),
     ]
 
     DEFAULT_CSS = """
@@ -498,12 +639,14 @@ class GameScreen(ModalScreen):
                             yield BoxScorePane(id="gs-boxscore")
                         with TabPane("📜 Full PBP", id="gs-tab-full"):
                             yield PlayFeed(id="gs-fullpbp")
+                        with TabPane("⚾ Pitches", id="gs-tab-pitches"):
+                            yield PitchFXPane(id="gs-pitchfx")
             with Vertical(id="gs-linescore-wrap"):
                 yield DataTable(id="gs-linescore", show_cursor=False)
                 yield Static("", id="gs-info")
             yield Label(
                 "[b][Esc/B][/b] back  [b]R[/b] refresh  "
-                "[b]1[/b] half inn.  [b]2[/b] box  [b]3[/b] full pbp",
+                "[b]1[/b] half inn.  [b]2[/b] box  [b]3[/b] full pbp  [b]4[/b] pitches",
                 id="gs-footer",
             )
 
@@ -618,6 +761,17 @@ class GameScreen(ModalScreen):
         except Exception:
             pass  # gracefully skip if box data is unavailable
 
+        # --- Pitch F/X (current at-bat) ---
+        curr_play = pbp.get("currentPlay", {}) if isinstance(pbp, dict) else {}
+        pitches = [
+            e for e in (curr_play.get("playEvents") or [])
+            if e.get("type") == "pitch"
+        ]
+        try:
+            self.query_one("#gs-pitchfx", PitchFXPane).update_pitches(pitches)
+        except Exception:
+            pass
+
         # --- Linescore by inning ---
         ls = self.query_one("#gs-linescore", DataTable)
         ls.clear(columns=True)
@@ -654,7 +808,7 @@ class GameScreen(ModalScreen):
         # Set once per state; stop if game finishes.
         if self._refresh_timer is None:
             if self._abstract == "Live":
-                self._refresh_timer = self.set_interval(10, self._auto_refresh)
+                self._refresh_timer = self.set_interval(5, self._auto_refresh)
             elif self._abstract == "Preview":
                 self._refresh_timer = self.set_interval(30, self._auto_refresh)
         elif self._abstract == "Final" and self._refresh_timer is not None:
@@ -691,6 +845,9 @@ class GameScreen(ModalScreen):
 
     def action_show_full(self) -> None:
         self.query_one("#gs-tabs", TabbedContent).active = "gs-tab-full"
+
+    def action_show_pitches(self) -> None:
+        self.query_one("#gs-tabs", TabbedContent).active = "gs-tab-pitches"
 
 
 # ---------------------------------------------------------------------------
