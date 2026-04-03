@@ -55,12 +55,26 @@ from mlbapi.exceptions import MLBAPIException
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _to_camel(snake: str) -> str:
+    """Convert snake_case to camelCase for dict key fallback lookups."""
+    parts = snake.split("_")
+    return parts[0] + "".join(p.title() for p in parts[1:])
+
+
 def _attr(obj, *keys, default=""):
-    """Safely traverse a chain of attributes, returning *default* on any miss."""
+    """Safely traverse a chain of attributes or dict keys.
+
+    Handles Pydantic model attributes *and* raw API dicts (e.g. ``line.status``
+    is stored as ``{"abstractGameState": "Live"}`` by Pydantic's extra="allow").
+    For dicts, tries the snake_case key first, then the camelCase equivalent.
+    """
     for key in keys:
         if obj is None:
             return default
-        obj = getattr(obj, key, None)
+        if isinstance(obj, dict):
+            obj = obj.get(key, obj.get(_to_camel(key)))
+        else:
+            obj = getattr(obj, key, None)
     return obj if obj is not None else default
 
 
@@ -119,7 +133,14 @@ class ScoreBug(Static):
 
 
 class BasesCount(Static):
-    """Combined base diamond + B/S/O count display."""
+    """Base diamond + B/S/O count display.
+
+    Flashes a yellow border briefly whenever a new runner reaches base.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._prev_bases = (False, False, False)
 
     def update_state(self, line) -> None:
         first  = _attr(line, "offense", "first",  default=None) is not None
@@ -135,13 +156,24 @@ class BasesCount(Static):
             self.update("")
             return
 
+        current = (first, second, third)
+        if self._prev_bases != current:
+            new_runner = any(c and not p for c, p in zip(current, self._prev_bases))
+            if new_runner:
+                self._flash_bases()
+        self._prev_bases = current
+
         diamond = _base_diamond(first, second, third)
         b = _pips(balls,   4, "⬤", "○", "green",  "dim")
         s = _pips(strikes, 3, "⬤", "○", "red",    "dim")
         o = _pips(outs,    3, "⬤", "○", "yellow", "dim")
 
-        count_line = f"B {b}   S {s}   O {o}"
+        count_line = f"B {b}  S {s}  O {o}"
         self.update(f"{diamond}\n\n{count_line}")
+
+    def _flash_bases(self) -> None:
+        self.add_class("base-flash")
+        self.set_timer(0.7, lambda: self.remove_class("base-flash"))
 
 
 class MatchupDisplay(Static):
@@ -159,6 +191,28 @@ class MatchupDisplay(Static):
             f"[bold]AB:[/bold] {batter}  [dim]vs[/dim]  {pitcher}\n"
             + (f"[dim]On deck: {on_deck}[/dim]" if on_deck else "")
         )
+
+
+class LastPlay(Static):
+    """Most recent completed play — event type + short description."""
+
+    _EVENT_STYLE = {
+        "Home Run": "bold yellow",
+        "Triple":   "bold green",
+        "Double":   "bold green",
+        "Single":   "green",
+        "Walk":     "cyan",
+        "Hit By Pitch": "cyan",
+    }
+
+    def set_play(self, event: str, desc: str, is_scoring: bool) -> None:
+        if not event and not desc:
+            self.update("")
+            return
+        icon  = "★" if is_scoring else "⚾"
+        style = "bold green" if is_scoring else self._EVENT_STYLE.get(event, "dim")
+        short = (desc[:54] + "…") if len(desc) > 54 else desc
+        self.update(f"[{style}]{icon} {event}[/{style}]\n[dim]{short}[/dim]")
 
 
 class PlayFeed(Widget):
@@ -188,6 +242,82 @@ class PlayFeed(Widget):
         self.query_one("#pf-scroll", ScrollableContainer).scroll_end(animate=False)
 
 
+class BoxScoreTable(Widget):
+    """Batting lineup with stats for one team."""
+
+    DEFAULT_CSS = """
+    BoxScoreTable { height: 1fr; }
+    BoxScoreTable #bs-title { padding: 0 1; text-style: bold; background: $panel; }
+    BoxScoreTable DataTable { height: 1fr; }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Label("BATTING", id="bs-title")
+        yield DataTable(id="bs-table", show_cursor=False, zebra_stripes=True)
+
+    def on_mount(self) -> None:
+        self.query_one("#bs-table", DataTable).add_columns(
+            "Player", "Pos", "AB", "R", "H", "RBI", "BB", "K", "AVG"
+        )
+
+    def populate(self, box, side: str) -> None:
+        """Fill batting rows from a BoxScore model and team side ('away'/'home')."""
+        team_obj = _attr(box, "teams", side, default=None)
+        if team_obj is None:
+            return
+        team_name = _attr(team_obj, "team", "name", default=side.upper())
+        self.query_one("#bs-title", Label).update(f"[bold]{team_name} BATTING[/bold]")
+
+        players_list = getattr(team_obj, "players", None) or []
+        player_map: dict = {}
+        for p in players_list:
+            pid = _attr(p, "person", "id", default=None)
+            if pid is not None:
+                player_map[pid] = p
+
+        batters = getattr(team_obj, "batters", None) or []
+        if not isinstance(batters, list):
+            return
+
+        table = self.query_one("#bs-table", DataTable)
+        table.clear()
+        for pid in batters:
+            player = player_map.get(pid)
+            if not player:
+                continue
+            name = _attr(player, "person", "full_name", default="—")
+            pos  = _attr(player, "position", "abbreviation", default="")
+            bat  = _attr(player, "stats", "batting", default=None)
+            ab   = _attr(bat, "at_bats",      default="-")
+            r    = _attr(bat, "runs",          default="-")
+            h    = _attr(bat, "hits",          default="-")
+            rbi  = _attr(bat, "rbi",           default="-")
+            bb   = _attr(bat, "base_on_balls", default="-")
+            k    = _attr(bat, "strike_outs",   default="-")
+            avg  = _attr(bat, "avg",           default=".---")
+            # Shorten "Firstname Lastname" → "F. Lastname" for narrow display
+            parts = name.rsplit(" ", 1)
+            short = f"{parts[0][0]}. {parts[1]}" if len(parts) == 2 else name
+            table.add_row(
+                short[:18], pos[:3],
+                str(ab), str(r), str(h), str(rbi), str(bb), str(k), str(avg),
+            )
+
+
+class BoxScorePane(Widget):
+    """Away and home batting stats stacked vertically."""
+
+    DEFAULT_CSS = "BoxScorePane { height: 1fr; }"
+
+    def compose(self) -> ComposeResult:
+        yield BoxScoreTable(id="bs-away")
+        yield BoxScoreTable(id="bs-home")
+
+    def populate(self, box) -> None:
+        self.query_one("#bs-away", BoxScoreTable).populate(box, "away")
+        self.query_one("#bs-home", BoxScoreTable).populate(box, "home")
+
+
 # ---------------------------------------------------------------------------
 # Game Screen
 # ---------------------------------------------------------------------------
@@ -196,17 +326,19 @@ class GameScreen(ModalScreen):
     """Full live-game view: score bug, bases/count, matchup, plays, linescore."""
 
     BINDINGS = [
-        Binding("escape", "dismiss", "Back", show=False),
-        Binding("b",      "dismiss", "Back"),
+        Binding("escape", "dismiss",      "Back",      show=False),
+        Binding("b",      "dismiss",      "Back"),
         Binding("r",      "refresh_game", "Refresh"),
+        Binding("1",      "show_plays",   "Plays",     show=False),
+        Binding("2",      "show_box",     "Box Score", show=False),
     ]
 
     DEFAULT_CSS = """
     GameScreen { align: center middle; }
 
     #gs-outer {
-        width: 95%;
-        height: 95%;
+        width: 98%;
+        height: 98%;
         border: round $primary;
         background: $surface;
     }
@@ -221,46 +353,50 @@ class GameScreen(ModalScreen):
     #gs-live-badge {
         text-align: center;
         height: 1;
-        padding: 0 1;
     }
 
-    #gs-middle {
-        height: 1fr;
-    }
+    #gs-middle { height: 1fr; }
 
     #gs-left {
-        width: 28;
-        padding: 1 2;
+        width: 30;
+        padding: 1 1;
         border-right: solid $panel;
     }
 
-    #gs-right {
-        width: 1fr;
-    }
+    #gs-right { width: 1fr; }
 
     BasesCount {
         height: auto;
         padding: 1 0;
     }
 
+    BasesCount.base-flash { border: solid $warning; }
+
     MatchupDisplay {
         height: auto;
         padding: 1 0;
+        border-top: dashed $panel;
     }
+
+    LastPlay {
+        height: auto;
+        padding: 1 0;
+        border-top: dashed $panel;
+    }
+
+    #gs-tabs { height: 1fr; }
 
     #gs-linescore-wrap {
         height: auto;
-        padding: 1 2;
+        padding: 0 1;
         border-top: solid $panel;
     }
 
-    #gs-linescore {
-        height: auto;
-    }
+    #gs-linescore { height: auto; max-height: 5; }
 
     #gs-info {
-        height: auto;
-        padding: 0 2 1 2;
+        height: 1;
+        padding: 0 1;
         color: $text-muted;
     }
 
@@ -272,8 +408,7 @@ class GameScreen(ModalScreen):
         color: $text-muted;
     }
 
-    .live-on  { color: red; }
-    .live-off { color: $panel; }
+    .scoring-flash { background: darkgreen; }
     """
 
     def __init__(self, game_pk: int, client: Client) -> None:
@@ -288,17 +423,27 @@ class GameScreen(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="gs-outer"):
-            yield ScoreBug(id="gs-score-bug")
             yield Label("", id="gs-live-badge")
+            yield ScoreBug(id="gs-score-bug")
             with Horizontal(id="gs-middle"):
                 with Vertical(id="gs-left"):
                     yield BasesCount(id="gs-bases")
                     yield MatchupDisplay(id="gs-matchup")
-                yield PlayFeed(id="gs-playfeed")
+                    yield LastPlay(id="gs-lastplay")
+                with Vertical(id="gs-right"):
+                    with TabbedContent(id="gs-tabs", initial="gs-tab-plays"):
+                        with TabPane("▶ Plays", id="gs-tab-plays"):
+                            yield PlayFeed(id="gs-playfeed")
+                        with TabPane("📋 Box Score", id="gs-tab-box"):
+                            yield BoxScorePane(id="gs-boxscore")
             with Vertical(id="gs-linescore-wrap"):
                 yield DataTable(id="gs-linescore", show_cursor=False)
                 yield Static("", id="gs-info")
-            yield Label("[b][Esc / B][/b] back  [b]R[/b] refresh", id="gs-footer")
+            yield Label(
+                "[b][Esc/B][/b] back  [b]R[/b] refresh  "
+                "[b]1[/b] plays  [b]2[/b] box score",
+                id="gs-footer",
+            )
 
     def on_mount(self) -> None:
         self._load()
@@ -350,10 +495,20 @@ class GameScreen(ModalScreen):
         # --- Matchup ---
         self.query_one("#gs-matchup", MatchupDisplay).update_state(line)
 
-        # --- Play feed ---
-        all_plays = (pbp or {}).get("allPlays", []) if isinstance(pbp, dict) else []
+        # --- Play feed + last play banner ---
+        all_plays   = (pbp or {}).get("allPlays",    []) if isinstance(pbp, dict) else []
         scoring_set = set((pbp or {}).get("scoringPlays", []) if isinstance(pbp, dict) else [])
-        recent = all_plays[-20:]  # last 20 plays
+
+        if all_plays:
+            last      = all_plays[-1]
+            last_idx  = len(all_plays) - 1
+            event = last.get("result", {}).get("event",       "")
+            desc  = last.get("result", {}).get("description", "")
+            self.query_one("#gs-lastplay", LastPlay).set_play(
+                event, desc, last_idx in scoring_set
+            )
+
+        recent = all_plays[-20:]
         offset = max(0, len(all_plays) - 20)
         adjusted_scoring = {i - offset for i in scoring_set if i >= offset}
 
@@ -363,6 +518,12 @@ class GameScreen(ModalScreen):
             if p.get("result", {}).get("description")
         ]
         self.query_one("#gs-playfeed", PlayFeed).set_plays(descs, adjusted_scoring)
+
+        # --- Box score (batting lineup) ---
+        try:
+            self.query_one("#gs-boxscore", BoxScorePane).populate(box)
+        except Exception:
+            pass  # gracefully skip if box data is unavailable
 
         # --- Linescore by inning ---
         ls = self.query_one("#gs-linescore", DataTable)
@@ -424,6 +585,12 @@ class GameScreen(ModalScreen):
 
     def action_refresh_game(self) -> None:
         self._load()
+
+    def action_show_plays(self) -> None:
+        self.query_one("#gs-tabs", TabbedContent).active = "gs-tab-plays"
+
+    def action_show_box(self) -> None:
+        self.query_one("#gs-tabs", TabbedContent).active = "gs-tab-box"
 
 
 # ---------------------------------------------------------------------------
