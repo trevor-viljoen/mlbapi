@@ -109,12 +109,10 @@ def _base_diamond(first: bool, second: bool, third: bool) -> str:
 class ScoreBug(Static):
     """Top-of-screen score/inning display."""
 
-    def update_state(self, line, away_name: str, home_name: str,
+    def update_state(self, abstract: str, line, away_name: str, home_name: str,
                      away_score: str, home_score: str) -> None:
-        abstract = _attr(line, "status", "abstract_game_state", default="")
-        inning   = _attr(line, "current_inning_ordinal", default="")
-        half     = _attr(line, "inning_half", default="")
-        is_top   = _attr(line, "is_top_inning", default=None)
+        inning = _attr(line, "current_inning_ordinal", default="")
+        is_top = _attr(line, "is_top_inning", default=None)
 
         if abstract == "Final":
             middle = "[bold green] FINAL [/bold green]"
@@ -141,19 +139,17 @@ class BasesCount(Static):
         super().__init__(*args, **kwargs)
         self._prev_bases = (False, False, False)
 
-    def update_state(self, line) -> None:
-        first  = _attr(line, "offense", "first",  default=None) is not None
-        second = _attr(line, "offense", "second", default=None) is not None
-        third  = _attr(line, "offense", "third",  default=None) is not None
-
-        balls   = int(_attr(line, "balls",   default=0) or 0)
-        strikes = int(_attr(line, "strikes", default=0) or 0)
-        outs    = int(_attr(line, "outs",    default=0) or 0)
-
-        abstract = _attr(line, "status", "abstract_game_state", default="")
+    def update_state(self, abstract: str, line) -> None:
         if abstract not in ("Live",):
             self.update("")
             return
+
+        first  = _attr(line, "offense", "first",  default=None) is not None
+        second = _attr(line, "offense", "second", default=None) is not None
+        third  = _attr(line, "offense", "third",  default=None) is not None
+        balls   = int(_attr(line, "balls",   default=0) or 0)
+        strikes = int(_attr(line, "strikes", default=0) or 0)
+        outs    = int(_attr(line, "outs",    default=0) or 0)
 
         current = (first, second, third)
         if self._prev_bases != current:
@@ -178,14 +174,13 @@ class BasesCount(Static):
 class MatchupDisplay(Static):
     """Current batter vs pitcher."""
 
-    def update_state(self, line) -> None:
-        abstract = _attr(line, "status", "abstract_game_state", default="")
+    def update_state(self, abstract: str, line) -> None:
         if abstract != "Live":
             self.update("")
             return
-        batter  = _attr(line, "offense", "batter",   "full_name", default="—")
-        pitcher = _attr(line, "defense", "pitcher",  "full_name", default="—")
-        on_deck = _attr(line, "offense", "on_deck",  "full_name", default="")
+        batter  = _attr(line, "offense", "batter",  "full_name", default="—")
+        pitcher = _attr(line, "defense", "pitcher", "full_name", default="—")
+        on_deck = _attr(line, "offense", "on_deck", "full_name", default="")
         self.update(
             f"[bold]AB:[/bold] {batter}  [dim]vs[/dim]  {pitcher}\n"
             + (f"[dim]On deck: {on_deck}[/dim]" if on_deck else "")
@@ -410,14 +405,15 @@ class GameScreen(ModalScreen):
     .scoring-flash { background: darkgreen; }
     """
 
-    def __init__(self, game_pk: int, client: Client) -> None:
+    def __init__(self, game_pk: int, client: Client,
+                 abstract_state: str = "") -> None:
         super().__init__()
-        self._game_pk   = game_pk
-        self._client    = client
-        self._abstract  = ""
-        self._prev_away = -1
-        self._prev_home = -1
-        self._blink_on  = True
+        self._game_pk       = game_pk
+        self._client        = client
+        self._abstract      = abstract_state  # seeded from schedule; refreshed on each load
+        self._prev_away     = -1
+        self._prev_home     = -1
+        self._blink_on      = True
         self._refresh_timer = None
 
     def compose(self) -> ComposeResult:
@@ -469,11 +465,15 @@ class GameScreen(ModalScreen):
         away_r    = _attr(box, "teams", "away", "team_stats", "batting", "runs", default="-")
         home_r    = _attr(box, "teams", "home", "team_stats", "batting", "runs", default="-")
 
-        self._abstract = _attr(line, "status", "abstract_game_state", default="")
+        # abstract_game_state: try linescore first (dict traversal), fall back to
+        # the value seeded from the schedule when this screen was opened.
+        ls_abstract = _attr(line, "status", "abstract_game_state", default="")
+        if ls_abstract:
+            self._abstract = ls_abstract
 
         # --- Score bug ---
         self.query_one("#gs-score-bug", ScoreBug).update_state(
-            line, away_name, home_name, str(away_r), str(home_r)
+            self._abstract, line, away_name, home_name, str(away_r), str(home_r)
         )
 
         # --- Scoring play flash ---
@@ -489,10 +489,10 @@ class GameScreen(ModalScreen):
             pass
 
         # --- Bases + count ---
-        self.query_one("#gs-bases", BasesCount).update_state(line)
+        self.query_one("#gs-bases", BasesCount).update_state(self._abstract, line)
 
         # --- Matchup ---
-        self.query_one("#gs-matchup", MatchupDisplay).update_state(line)
+        self.query_one("#gs-matchup", MatchupDisplay).update_state(self._abstract, line)
 
         # --- Play feed + last play banner ---
         all_plays   = (pbp or {}).get("allPlays",    []) if isinstance(pbp, dict) else []
@@ -556,12 +556,17 @@ class GameScreen(ModalScreen):
         if info_lines:
             self.query_one("#gs-info", Static).update("  ".join(info_lines[:4]))
 
-        # --- Schedule auto-refresh ---
-        if self._refresh_timer is None:
-            if self._abstract == "Live":
-                self._refresh_timer = self.set_interval(10, self._auto_refresh)
-            elif self._abstract == "Preview":
-                self._refresh_timer = self.set_interval(30, self._auto_refresh)
+        # --- Auto-refresh timer ---
+        # Cancel any existing timer and restart with the correct interval so
+        # a game transitioning from Preview → Live picks up the faster cadence.
+        if self._refresh_timer is not None:
+            self._refresh_timer.stop()
+            self._refresh_timer = None
+        if self._abstract == "Live":
+            self._refresh_timer = self.set_interval(10, self._auto_refresh)
+        elif self._abstract == "Preview":
+            self._refresh_timer = self.set_interval(30, self._auto_refresh)
+        # Final games: no timer
 
     def _flash_score(self) -> None:
         """Briefly highlight the score bug to signal a scoring play."""
@@ -697,11 +702,18 @@ class SchedulePane(Widget):
         table.refresh()
 
     def selected_game_pk(self) -> Optional[int]:
+        pk, _ = self.selected_game_info()
+        return pk
+
+    def selected_game_info(self) -> tuple:
+        """Return (game_pk, abstract_game_state) for the currently highlighted row."""
         table = self.query_one("#sched-table", DataTable)
         idx = table.cursor_row
         if not self._games or idx < 0 or idx >= len(self._games):
-            return None
-        return getattr(self._games[idx], "game_pk", None)
+            return None, ""
+        game = self._games[idx]
+        abstract = _attr(game, "status", "abstract_game_state", default="")
+        return getattr(game, "game_pk", None), abstract
 
     def prev_date(self) -> None:
         self.current_date = self.current_date - timedelta(days=1)
@@ -862,9 +874,9 @@ class MLBTerminal(App):
     def action_open_game(self) -> None:
         if self.query_one(TabbedContent).active != "schedule":
             return
-        game_pk = self.query_one(SchedulePane).selected_game_pk()
-        if game_pk is not None:
-            self.push_screen(GameScreen(game_pk, self._client))
+        pk, abstract = self.query_one(SchedulePane).selected_game_info()
+        if pk is not None:
+            self.push_screen(GameScreen(pk, self._client, abstract_state=abstract))
 
     def action_quit(self) -> None:
         self.exit()
