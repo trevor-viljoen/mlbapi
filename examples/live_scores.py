@@ -34,7 +34,6 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, ScrollableContainer
-from textual.reactive import reactive
 from textual.screen import ModalScreen, Screen
 from textual.widget import Widget
 from textual.widgets import (
@@ -600,13 +599,11 @@ class GameScreen(ModalScreen):
 class SchedulePane(Widget):
     """Schedule DataTable with date navigation."""
 
-    current_date: reactive[date] = reactive(date.today, init=False)
-
     def __init__(self, client: Client, initial_date: date) -> None:
         super().__init__()
         self._client       = client
         self._games: list  = []
-        self._initial_date = initial_date
+        self.current_date  = initial_date  # plain attribute — no reactive timing issues
 
     def compose(self) -> ComposeResult:
         yield Label("", id="sched-date-label")
@@ -617,15 +614,13 @@ class SchedulePane(Widget):
         self.query_one("#sched-table", DataTable).add_columns(
             "Away", "R", "Home", "R", "Status", "Inning", "Venue",
         )
-        # call_after_refresh ensures the full widget tree is laid out before
-        # we trigger the first network load.
-        self.call_after_refresh(lambda: setattr(self, "current_date", self._initial_date))
-
-    def watch_current_date(self, d: date) -> None:
-        self.query_one("#sched-date-label", Label).update(
-            f"[bold]{d.strftime('%A, %B %-d, %Y')}[/bold]"
-        )
+        self._update_date_label()
         self._load()
+
+    def _update_date_label(self) -> None:
+        self.query_one("#sched-date-label", Label).update(
+            f"[bold]{self.current_date.strftime('%A, %B %-d, %Y')}[/bold]"
+        )
 
     @work(thread=True)
     def _load(self) -> None:
@@ -671,8 +666,8 @@ class SchedulePane(Widget):
             home     = _attr(game, "teams", "home", default=None)
             abstract = _attr(game, "status", "abstract_game_state", default="")
             state    = _attr(game, "status", "detailed_state",       default="")
-            inning   = _attr(game, "linescore", "current_inning",               default="")
-            half     = _attr(game, "linescore", "inning_half_abbreviation",     default="")
+            inning   = _attr(game, "linescore", "current_inning",           default="")
+            half     = _attr(game, "linescore", "inning_half_abbreviation", default="")
 
             if abstract == "Final":
                 status_str, inning_str = "[green]Final[/green]", ""
@@ -699,7 +694,6 @@ class SchedulePane(Widget):
                 _attr(game, "venue", "name", default=""),
             )
 
-        # Ensure the table redraws after bulk row insertion
         table.refresh()
 
     def selected_game_pk(self) -> Optional[int]:
@@ -711,9 +705,13 @@ class SchedulePane(Widget):
 
     def prev_date(self) -> None:
         self.current_date = self.current_date - timedelta(days=1)
+        self._update_date_label()
+        self._load()
 
     def next_date(self) -> None:
         self.current_date = self.current_date + timedelta(days=1)
+        self._update_date_label()
+        self._load()
 
     def refresh_data(self) -> None:
         self._load()
