@@ -652,8 +652,12 @@ class GameScreen(ModalScreen):
 
     def on_mount(self) -> None:
         self._load()
-        # Blinking ● LIVE indicator
         self.set_interval(0.8, self._blink_live)
+        # Start auto-refresh immediately using the state seeded from the schedule.
+        # _populate will stop the timer if the game reaches Final.
+        if self._abstract != "Final":
+            interval = 5 if self._abstract == "Live" else 30
+            self._refresh_timer = self.set_interval(interval, self._auto_refresh)
 
     @work(thread=True)
     def _load(self) -> None:
@@ -804,16 +808,16 @@ class GameScreen(ModalScreen):
         if info_lines:
             self.query_one("#gs-info", Static).update("  ".join(info_lines[:4]))
 
-        # --- Auto-refresh timer ---
-        # Set once per state; stop if game finishes.
-        if self._refresh_timer is None:
-            if self._abstract == "Live":
-                self._refresh_timer = self.set_interval(5, self._auto_refresh)
-            elif self._abstract == "Preview":
-                self._refresh_timer = self.set_interval(30, self._auto_refresh)
-        elif self._abstract == "Final" and self._refresh_timer is not None:
-            self._refresh_timer.stop()
-            self._refresh_timer = None
+        # --- Auto-refresh timer: manage state transitions ---
+        if self._abstract == "Final":
+            # Game over — stop polling
+            if self._refresh_timer is not None:
+                self._refresh_timer.stop()
+                self._refresh_timer = None
+        elif self._refresh_timer is None:
+            # Game went Live after we opened it in Preview (or state was unknown)
+            interval = 5 if self._abstract == "Live" else 30
+            self._refresh_timer = self.set_interval(interval, self._auto_refresh)
 
     def _flash_score(self) -> None:
         """Briefly highlight the score bug to signal a scoring play."""
