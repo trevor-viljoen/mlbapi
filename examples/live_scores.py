@@ -412,14 +412,17 @@ _PITCH_TYPE_SHORT: dict[str, str] = {
 
 
 class StrikeZonePlot(Static):
-    """3×3 MLB strike zone grid (catcher's view).
+    """3×3 MLB strike zone grid (catcher's view) with outer-zone corners.
 
-    Zone layout:
-        1 | 2 | 3   (top)
-        4 | 5 | 6   (middle)
-        7 | 8 | 9   (bottom)
-    Shows the most-recent pitch call per zone cell.
-    Pitches with zone 11–14 land outside the box (not plotted).
+    Zone layout (catcher's view):
+        11│ 1 │ 2 │ 3 │12   (11/12 = top corners outside)
+          ├───┼───┼───┤
+          │ 4 │ 5 │ 6 │
+          ├───┼───┼───┤
+        13│ 7 │ 8 │ 9 │14   (13/14 = bottom corners outside)
+
+    Zones 1–9 are in the strike zone; 11–14 are outside (typically balls).
+    Each cell shows the most-recent call for pitches landing in that zone.
     """
 
     DEFAULT_CSS = "StrikeZonePlot { height: auto; padding: 0 0; }"
@@ -437,6 +440,7 @@ class StrikeZonePlot(Static):
                     pass
 
         def cell(z: int) -> str:
+            """3-char wide in-zone cell."""
             code = zone_map.get(z)
             if code is None:
                 return "[dim] · [/dim]"
@@ -444,14 +448,23 @@ class StrikeZonePlot(Static):
             style = _PITCH_CALL_STYLE.get(code, "")
             return f"[{style}] {ch} [/{style}]" if style else f" {ch} "
 
+        def corner(z: int) -> str:
+            """1-char outer-zone corner indicator."""
+            code = zone_map.get(z)
+            if code is None:
+                return "[dim]·[/dim]"
+            ch    = _PITCH_CALL_CHAR.get(code, code or "?")
+            style = _PITCH_CALL_STYLE.get(code, "")
+            return f"[{style}]{ch}[/{style}]" if style else ch
+
         rows = [
-            "┌───┬───┬───┐",
-            f"│{cell(1)}│{cell(2)}│{cell(3)}│",
-            "├───┼───┼───┤",
-            f"│{cell(4)}│{cell(5)}│{cell(6)}│",
-            "├───┼───┼───┤",
-            f"│{cell(7)}│{cell(8)}│{cell(9)}│",
-            "└───┴───┴───┘",
+            f"{corner(11)} ┌───┬───┬───┐ {corner(12)}",
+            f"  │{cell(1)}│{cell(2)}│{cell(3)}│",
+            f"  ├───┼───┼───┤",
+            f"  │{cell(4)}│{cell(5)}│{cell(6)}│",
+            f"  ├───┼───┼───┤",
+            f"  │{cell(7)}│{cell(8)}│{cell(9)}│",
+            f"{corner(13)} └───┴───┴───┘ {corner(14)}",
         ]
         self.update("\n".join(rows))
 
@@ -659,13 +672,13 @@ class GameScreen(ModalScreen):
             interval = 5 if self._abstract == "Live" else 30
             self._refresh_timer = self.set_interval(interval, self._auto_refresh)
 
-    @work(thread=True)
+    @work(thread=True, exclusive=True)
     def _load(self) -> None:
         try:
             box  = self._client.boxscore(self._game_pk)
             line = self._client.linescore(self._game_pk)
             pbp  = self._client.play_by_play(self._game_pk)
-        except MLBAPIException as exc:
+        except Exception as exc:
             self.app.call_from_thread(lambda: self._show_error(str(exc)))
             return
         self.app.call_from_thread(lambda: self._populate(box, line, pbp))
@@ -673,7 +686,13 @@ class GameScreen(ModalScreen):
     def _show_error(self, msg: str) -> None:
         self.query_one("#gs-score-bug", ScoreBug).update(f"[red]{msg}[/red]")
 
-    def _populate(self, box, line, pbp) -> None:
+    def _populate(self, box, line, pbp) -> None:  # noqa: C901
+        try:
+            self._populate_inner(box, line, pbp)
+        except Exception as exc:
+            self._show_error(f"[red]Render error: {exc}[/red]")
+
+    def _populate_inner(self, box, line, pbp) -> None:
         away_name = _attr(box, "teams", "away", "team", "name", default="Away")
         home_name = _attr(box, "teams", "home", "team", "name", default="Home")
         away_r    = _attr(box, "teams", "away", "team_stats", "batting", "runs", default="-")
