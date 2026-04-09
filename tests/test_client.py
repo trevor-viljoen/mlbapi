@@ -519,12 +519,14 @@ class TestTransactions:
 
 class TestMeta:
     def test_returns_dict(self):
-        with patch('mlbapi.data.meta.request', return_value=META_DATA):
+        with patch('mlbapi.data.meta.requests.get') as mock_get:
+            mock_get.return_value.json.return_value = META_DATA
             result = _client(META_DATA).meta('leagueLeaderTypes')
         assert isinstance(result, dict)
 
     def test_meta_content(self):
-        with patch('mlbapi.data.meta.request', return_value=META_DATA):
+        with patch('mlbapi.data.meta.requests.get') as mock_get:
+            mock_get.return_value.json.return_value = META_DATA
             result = _client(META_DATA).meta('leagueLeaderTypes')
         assert 'leagueLeaderTypes' in result
 

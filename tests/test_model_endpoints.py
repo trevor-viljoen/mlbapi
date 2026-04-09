@@ -159,7 +159,7 @@ class TestDraft:
 
     def test_drafts_contains_data(self):
         d = Draft(DRAFT_DATA)
-        assert d.drafts['draftYear'] == 2023
+        assert d.drafts.draft_year == 2023
 
 
 class TestStats:

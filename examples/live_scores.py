@@ -899,8 +899,9 @@ class SchedulePane(Widget):
         self._load()
 
     def _update_date_label(self) -> None:
+        d = self.current_date
         self.query_one("#sched-date-label", Label).update(
-            f"[bold]{self.current_date.strftime('%A, %B %-d, %Y')}[/bold]"
+            f"[bold]{d.strftime('%A, %B')} {d.day}, {d.year}[/bold]"
         )
 
     @work(thread=True)

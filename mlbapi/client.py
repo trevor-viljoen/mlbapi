@@ -70,6 +70,7 @@ from mlbapi.data.jobs import VALID_JOBS_PARAMS
 from mlbapi.data.transactions import VALID_TRANSACTIONS_PARAMS
 from mlbapi.data.meta import get_meta
 from mlbapi.data.sport import VALID_SPORTS_PARAMS
+from mlbapi.data.people import VALID_PEOPLE_PARAMS, VALID_PEOPLE_SEARCH_PARAMS
 
 # Model classes
 from mlbapi.models.attendance import Attendance
@@ -87,6 +88,7 @@ from mlbapi.models.stats import Stats, StatsLeaders
 from mlbapi.models.team import Teams
 from mlbapi.models.transactions import Transactions
 from mlbapi.models.venue import Venues
+from mlbapi.models.people import People
 
 BASE_URL = 'https://statsapi.mlb.com/api'
 
@@ -125,17 +127,6 @@ class Client:
         # Context manager — session created/closed automatically
         with Client() as client:
             box = client.boxscore(716463)
-    """
-    """Configurable MLB StatsAPI client.
-
-    Args:
-        base_url: Override the default ``https://statsapi.mlb.com/api`` base.
-        timeout: HTTP timeout in seconds passed to every request.
-        session: A ``requests.Session`` to use for all HTTP calls.  Provide
-            this to add custom headers, auth, retry adapters, etc.  When
-            *None* (the default) the module-level :func:`requests.get` is
-            used, which keeps backwards compatibility with tests that patch
-            ``requests.get``.
     """
 
     def __init__(
@@ -200,20 +191,19 @@ class Client:
                 resp = self._session.get(url, **kwargs)
             else:
                 resp = requests.get(url, **kwargs)
-
-            try:
-                data = resp.json()
-            except json.JSONDecodeError as exc:
-                raise exc
-
-            if 'message' in data:
-                error = 'msg number {}: {}'.format(
-                    data.get('messageNumber', '?'), data['message']
-                )
-                raise exceptions.ObjectNotFoundException(error)
-
         except requests.exceptions.RequestException as exc:
             raise exceptions.RequestException(exc)
+
+        try:
+            data = resp.json()
+        except json.JSONDecodeError:
+            raise exceptions.RequestException(f'Invalid JSON from {url}')
+
+        if 'message' in data:
+            error = 'msg number {}: {}'.format(
+                data.get('messageNumber', '?'), data['message']
+            )
+            raise exceptions.ObjectNotFoundException(error)
 
         return data
 
@@ -288,6 +278,38 @@ class Client:
                              primary_key=game_pk,
                              valid_params=VALID_LIVE_DIFF_PARAMS,
                              api_version='v1.1', **kwargs)
+
+    def live_feed(self, game_pk: int, **kwargs) -> dict:
+        """Full live game feed (v1.1 — raw dict)."""
+        return self._request(endpoint.GAME, 'feed/live', primary_key=game_pk,
+                             valid_params=VALID_LIVE_PARAMS,
+                             api_version='v1.1', **kwargs)
+
+    def live_timestamps(self, game_pk: int, **kwargs) -> dict:
+        """Live feed timestamps (v1.1 — raw dict)."""
+        return self._request(endpoint.GAME, 'feed/live/timestamps',
+                             primary_key=game_pk,
+                             valid_params=VALID_LIVE_TIMESTAMPS_PARAMS,
+                             api_version='v1.1', **kwargs)
+
+    def win_probability(self, game_pk: int, **kwargs) -> dict:
+        """Win probability data (raw dict)."""
+        return self._request(endpoint.GAME, 'winProbability',
+                             primary_key=game_pk,
+                             valid_params=VALID_WIN_PROBABILITY_PARAMS,
+                             **kwargs)
+
+    def game_content(self, game_pk: int, **kwargs) -> dict:
+        """Game content (highlights, media — raw dict)."""
+        return self._request(endpoint.GAME, 'content', primary_key=game_pk,
+                             valid_params=VALID_CONTENT_PARAMS, **kwargs)
+
+    def context_metrics(self, game_pk: int, **kwargs) -> dict:
+        """Context metrics (raw dict)."""
+        return self._request(endpoint.GAME, 'contextMetrics',
+                             primary_key=game_pk,
+                             valid_params=VALID_CONTEXT_METRICS_PARAMS,
+                             **kwargs)
 
     # ------------------------------------------------------------------
     # Schedule
@@ -513,6 +535,35 @@ class Client:
         data = self._request(endpoint.TRANSACTIONS,
                              valid_params=VALID_TRANSACTIONS_PARAMS, **kwargs)
         return Transactions.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # People / Person
+    # ------------------------------------------------------------------
+
+    def person(self, person_id: int, **kwargs) -> People:
+        """Single player by MLB person ID.
+
+        The player record is at ``result.people[0]``.
+        """
+        data = self._request(endpoint.PEOPLE, primary_key=person_id,
+                             valid_params=VALID_PEOPLE_PARAMS, **kwargs)
+        return People.model_validate(data)
+
+    def people(self, person_ids, **kwargs) -> People:
+        """One or more players by MLB person ID (int or list[int])."""
+        if isinstance(person_ids, int):
+            person_ids = [person_ids]
+        kwargs['person_ids'] = to_comma_delimited_string(person_ids, int)
+        data = self._request(endpoint.PEOPLE,
+                             valid_params=VALID_PEOPLE_PARAMS, **kwargs)
+        return People.model_validate(data)
+
+    def people_search(self, names: str, **kwargs) -> People:
+        """Search players by name substring, e.g. ``'Ohtani'``."""
+        kwargs['names'] = names
+        data = self._request(endpoint.PEOPLE, context='search',
+                             valid_params=VALID_PEOPLE_SEARCH_PARAMS, **kwargs)
+        return People.model_validate(data)
 
     # ------------------------------------------------------------------
     # Meta (lookup tables)

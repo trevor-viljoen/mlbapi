@@ -16,19 +16,22 @@ from mlbapi.utils import check_kwargs
 
 
 VALID_STATS_PARAMS = [
-    'stats', 'player_pool', 'position', 'team_id', 'league_id', 'limit',
-    'offset', 'group', 'game_type', 'season', 'sport_ids', 'sort_stat',
-    'order', 'hydrate', 'fields', 'person_id', 'metrics', 'start_date', 'end_date',
+    'stats', 'player_pool', 'position', 'team_id', 'league_id', 'league_list_id',
+    'limit', 'offset', 'group', 'game_type', 'season', 'seasons', 'sport_ids',
+    'pitching_team_id', 'opponent_id', 'metric_ids', 'game_pks', 'sitting_split_id',
+    'sort_stat', 'order', 'hydrate', 'fields', 'person_id', 'player_id', 'metrics',
+    'start_date', 'end_date',
 ]
 
 VALID_STATS_LEADERS_PARAMS = [
     'leader_categories', 'player_pool', 'leader_game_types', 'stat_group',
-    'season', 'league_id', 'sport_id', 'hydrate', 'limit', 'fields', 'stat_type',
+    'season', 'league_id', 'sport_id', 'sports_id', 'hydrate', 'limit', 'offset',
+    'expand', 'team_id', 'position', 'game_type', 'fields', 'stat_type',
 ]
 
 VALID_STATS_STREAKS_PARAMS = [
     'streak_type', 'streak_span', 'game_type', 'season', 'sport_id',
-    'limit', 'hydrate', 'fields',
+    'limit', 'hydrate', 'fields', 'team_id', 'player_pool', 'position', 'stat_group',
 ]
 
 

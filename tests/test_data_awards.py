@@ -100,5 +100,5 @@ class TestGetAwardRecipients:
 
     def test_valid_params_list(self):
         assert set(awards_data.VALID_AWARDS_PARAMS) == {
-            'sport_id', 'league_id', 'season', 'hydrate', 'fields'
+            'award_id', 'sport_id', 'league_id', 'season', 'hydrate', 'fields'
         }
