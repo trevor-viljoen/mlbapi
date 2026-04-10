@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+
+import inflection
+from pydantic import model_validator
 
 from mlbapi.models import MLBModel
 
@@ -14,11 +17,23 @@ class VenueLocation(MLBModel):
     city: Optional[str] = None
     state: Optional[str] = None
     state_abbrev: Optional[str] = None
-    zip_code: Optional[str] = None
+    postal_code: Optional[str] = None
     country: Optional[str] = None
     phone: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _extract_coords(cls, data: Any) -> Any:
+        """Flatten ``defaultCoordinates`` into top-level lat/lon fields."""
+        if isinstance(data, dict):
+            coords = data.pop('defaultCoordinates',
+                              data.pop('default_coordinates', None))
+            if coords and isinstance(coords, dict):
+                data.setdefault('latitude', coords.get('latitude'))
+                data.setdefault('longitude', coords.get('longitude'))
+        return data
 
 
 class TimeZone(MLBModel):

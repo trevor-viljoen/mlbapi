@@ -28,6 +28,7 @@ class Person(MLBModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     primary_number: Optional[str] = None
+    current_age: Optional[int] = None
     birth_date: Optional[str] = None
     birth_city: Optional[str] = None
     birth_state_province: Optional[str] = None
@@ -42,6 +43,7 @@ class Person(MLBModel):
     gender: Optional[str] = None
     is_player: Optional[bool] = None
     is_verified: Optional[bool] = None
+    draft_year: Optional[int] = None
     mlb_debut_date: Optional[str] = None
     bat_side: Optional[Handedness] = None
     pitch_hand: Optional[Handedness] = None
