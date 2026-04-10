@@ -81,6 +81,9 @@ from mlbapi import Client
 
 client = Client()
 
+schedule = client.schedule(date='2024-06-01', team_id=117)
+game_pk = schedule.dates[0].games[0].game_pk
+
 line = client.linescore(game_pk)
 
 print(

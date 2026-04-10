@@ -77,11 +77,10 @@ def get_json_data(headers, api_url, **kwargs):
         try:
             jdata = api_request.json()
             if 'message' in jdata:
-                error = 'msg number {}: {}'.format(jdata['messageNumber'],
+                error = 'msg number {}: {}'.format(jdata.get('messageNumber', '?'),
                                                    jdata['message'])
                 raise mlbapi.exceptions.ObjectNotFoundException(error)
         except json.decoder.JSONDecodeError as error:
-            print('{}'.format(api_request.url))
             raise error
     except requests.exceptions.RequestException as error:
         raise mlbapi.exceptions.RequestException(error)
