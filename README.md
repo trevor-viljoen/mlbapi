@@ -203,6 +203,7 @@ except RequestException as e:
 | `client.stats_leaders(**kwargs)` | Stats leaders |
 | `client.stats_streaks(**kwargs)` | Stats streaks |
 | `client.homerunderby(game_pk)` | Home Run Derby data |
+| `client.game_pace(**kwargs)` | Pace-of-game statistics by season/team/league |
 | `client.attendance(**kwargs)` | Attendance data |
 | `client.awards(**kwargs)` | Awards |
 | `client.award_recipients(award_id)` | Recipients for an award |

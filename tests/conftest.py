@@ -413,6 +413,24 @@ HOMERUNDERBY_DATA = {
     'pool': {'players': []},
 }
 
+GAME_PACE_DATA = {
+    'teams': [
+        {
+            'season': '2024',
+            'hitsPerGame': 15.89,
+            'runsPerGame': 9.21,
+            'totalGames': 81,
+            'timePerGame': '02:49:33',
+            'timePer9Inn': '02:52:04',
+            'team': {'id': 147, 'name': 'NY Yankees', 'link': '/api/v1/teams/147'},
+            'league': {'id': 103, 'name': 'American League', 'link': '/api/v1/league/103'},
+            'sport': {'id': 1, 'name': 'Major League Baseball', 'link': '/api/v1/sports/1'},
+        }
+    ],
+    'leagues': [],
+    'sports': [],
+}
+
 ATTENDANCE_DATA = {
     'records': [
         {'openingDay': '2024-03-28', 'attendanceRecords': [

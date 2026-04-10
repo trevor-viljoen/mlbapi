@@ -419,13 +419,14 @@ from mlbapi.models.draft import Draft
 from mlbapi.models.stats import Stats, StatsLeaders
 from mlbapi.models.homerunderby import HomeRunDerby
 from mlbapi.models.attendance import Attendance
+from mlbapi.models.gamepace import GamePace
 from mlbapi.models.awards import Awards
 from mlbapi.models.jobs import Jobs
 from mlbapi.models.transactions import Transactions
 from tests.conftest import (
     LEAGUES_DATA, CONFERENCES_DATA, SEASONS_DATA, VENUES_DATA, DRAFT_DATA,
     STATS_DATA, STATS_LEADERS_DATA, HOMERUNDERBY_DATA,
-    ATTENDANCE_DATA, AWARDS_DATA, JOBS_DATA, TRANSACTIONS_DATA,
+    GAME_PACE_DATA, ATTENDANCE_DATA, AWARDS_DATA, JOBS_DATA, TRANSACTIONS_DATA,
     META_DATA, SPORT_DATA,
 )
 
@@ -556,6 +557,32 @@ class TestAttendance:
     def test_invalid_param_raises(self):
         with pytest.raises(ParameterException):
             _client(ATTENDANCE_DATA).attendance(not_valid='x')
+
+
+class TestGamePace:
+    def test_returns_game_pace(self):
+        assert isinstance(_client(GAME_PACE_DATA).game_pace(), GamePace)
+
+    def test_has_teams(self):
+        result = _client(GAME_PACE_DATA).game_pace()
+        assert isinstance(result.teams, list)
+        assert len(result.teams) == 1
+
+    def test_team_entry_fields(self):
+        result = _client(GAME_PACE_DATA).game_pace()
+        entry = result.teams[0]
+        assert entry.season == '2024'
+        assert entry.hits_per_game == 15.89
+        assert entry.time_per_game == '02:49:33'
+
+    def test_team_ref(self):
+        result = _client(GAME_PACE_DATA).game_pace()
+        assert result.teams[0].team.id == 147
+        assert result.teams[0].team.name == 'NY Yankees'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(GAME_PACE_DATA).game_pace(not_valid='x')
 
 
 class TestAwards:

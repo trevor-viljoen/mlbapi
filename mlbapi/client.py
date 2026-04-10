@@ -66,6 +66,7 @@ from mlbapi.data.stats import (
 )
 from mlbapi.data.homerunderby import VALID_HOMERUNDERBY_PARAMS
 from mlbapi.data.attendance import VALID_ATTENDANCE_PARAMS
+from mlbapi.data.gamepace import VALID_GAME_PACE_PARAMS
 from mlbapi.data.awards import VALID_AWARDS_PARAMS
 from mlbapi.data.jobs import VALID_JOBS_PARAMS
 from mlbapi.data.transactions import VALID_TRANSACTIONS_PARAMS
@@ -75,6 +76,7 @@ from mlbapi.data.people import VALID_PEOPLE_PARAMS, VALID_PEOPLE_SEARCH_PARAMS
 
 # Model classes
 from mlbapi.models.attendance import Attendance
+from mlbapi.models.gamepace import GamePace
 from mlbapi.models.awards import Awards
 from mlbapi.models.conference import Conferences
 from mlbapi.models.league import Leagues
@@ -524,6 +526,12 @@ class Client:
         data = self._request(endpoint.ATTENDANCE,
                              valid_params=VALID_ATTENDANCE_PARAMS, **kwargs)
         return Attendance.model_validate(data)
+
+    def game_pace(self, **kwargs) -> GamePace:
+        """Pace-of-game statistics by season, team, league, or sport."""
+        data = self._request(endpoint.GAME_PACE,
+                             valid_params=VALID_GAME_PACE_PARAMS, **kwargs)
+        return GamePace.model_validate(data)
 
     # ------------------------------------------------------------------
     # Awards
