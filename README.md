@@ -5,21 +5,11 @@
 [![License](https://img.shields.io/github/license/trevor-viljoen/mlbapi.svg)](https://github.com/trevor-viljoen/mlbapi/blob/dev/LICENSE)
 [![Stars](https://img.shields.io/github/stars/trevor-viljoen/mlbapi?style=social)](https://github.com/trevor-viljoen/mlbapi/stargazers)
 
-**mlbapi** is a Python library that provides Pythonic bindings for [MLB Advanced Media's StatsAPI](https://statsapi.mlb.com/) — the same data source that powers MLB.com's live game data, box scores, standings, and more.
+**mlbapi** is a Python 3 client for the [MLB StatsAPI](https://statsapi.mlb.com/) — the data source that powers MLB.com's live game data, box scores, standings, and more.
 
-Unlike raw API calls, `mlbapi` returns structured Python objects so you can work with MLB data naturally in your code.
+All responses are returned as validated Pydantic models, so you get attribute access, type safety, and IDE autocompletion with no JSON parsing required.
 
------
-
-## Features
-
-- Schedule lookups by team and date range
-- Box score data including batting and pitching stats
-- Live linescore data (inning, batter, pitcher, count)
-- Structured Python objects from every endpoint — no manual JSON parsing
-- Lightweight: only requires `requests`
-
------
+---
 
 ## Installation
 
@@ -27,96 +17,212 @@ Unlike raw API calls, `mlbapi` returns structured Python objects so you can work
 pip install mlbapi
 ```
 
------
+Requires Python 3.10+ and `pydantic >= 2.0`.
+
+---
 
 ## Quick Start
 
-### Get a team's schedule for a date range
+Everything goes through a `Client` instance.
 
 ```python
-import mlbapi
+from mlbapi import Client
 
-# Houston Astros schedule for the 2024 season
-schedule = mlbapi.schedule(start_date='04/01/2024', end_date='10/01/2024', team_id=117)
+client = Client()
 ```
 
-### Get a team's schedule for a single date
+### Schedule
 
 ```python
-import mlbapi
+from mlbapi import Client
 
-schedule = mlbapi.schedule(date='04/01/2024', team_id=117)
+client = Client()
+
+# Single date
+schedule = client.schedule(date='2024-06-01', team_id=117)
+
+# Date range
+schedule = client.schedule(
+    start_date='2024-04-01',
+    end_date='2024-10-01',
+    team_id=117,
+)
+
+for date in schedule.dates:
+    for game in date.games:
+        print(game.game_pk, game.status.detailed_state)
 ```
 
-### Get box score data for a game
+### Box Score
 
 ```python
-import mlbapi
+from mlbapi import Client
 
-schedule = mlbapi.schedule(date='04/01/2024', team_id=117)
+client = Client()
+
+schedule = client.schedule(date='2024-06-01', team_id=117)
 game_pk = schedule.dates[0].games[0].game_pk
-boxscore = mlbapi.boxscore(game_pk)
 
-# Print all game info (weather, attendance, venue, etc.)
-for info in boxscore.info:
-    print(info.info)
+box = client.boxscore(game_pk)
 
-# Print batting stats for both teams
-print(boxscore.teams.away.team_stats.batting.__dict__)
-print(boxscore.teams.home.team_stats.batting.__dict__)
+# Team batting stats
+print(box.teams.away.team.name)
+print(box.teams.away.team_stats.batting.model_dump())
+
+# Game info (weather, attendance, etc.)
+for item in box.info:
+    print(item.info)
 ```
 
-### Get live linescore data
+### Linescore
 
 ```python
-import mlbapi
+from mlbapi import Client
 
-schedule = mlbapi.schedule(date='04/01/2024', team_id=117)
-game_pk = schedule.dates[0].games[0].game_pk
-line = mlbapi.linescore(game_pk)
+client = Client()
 
-output = '{} of the {}, {} facing {}. {} ball(s), {} strike(s), {} out(s)'
-print(output.format(
-    line.inning_half,
-    line.current_inning_ordinal,
-    line.offense.batter.full_name,
-    line.defense.pitcher.full_name,
-    line.balls,
-    line.strikes,
-    line.outs
-))
-# Top of the 9th, Scott Van Slyke facing Framber Valdez. 0 ball(s), 3 strike(s), 3 out(s)
+line = client.linescore(game_pk)
+
+print(
+    f'{line.inning_half} of the {line.current_inning_ordinal} — '
+    f'{line.offense.batter.full_name} facing {line.defense.pitcher.full_name}. '
+    f'Count: {line.balls}-{line.strikes}, {line.outs} out(s).'
+)
 ```
 
------
+### Standings
+
+```python
+from mlbapi import Client
+
+client = Client()
+
+standings = client.standings(league_id=[103, 104])  # AL + NL
+
+for record in standings.records:
+    for tr in record.team_records:
+        print(f'{tr.team.name:30s}  {tr.wins}-{tr.losses}  {tr.winning_percentage}')
+```
+
+---
+
+## Configuration
+
+### Timeout
+
+```python
+client = Client(timeout=30)
+```
+
+### Custom Session (retries, proxy, headers)
+
+```python
+import requests
+from requests.adapters import HTTPAdapter, Retry
+
+retry = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+session = requests.Session()
+session.mount('https://', HTTPAdapter(max_retries=retry))
+
+client = Client(session=session)
+```
+
+### Context Manager
+
+Use the context manager when you want the client to manage its own session lifecycle:
+
+```python
+from mlbapi import Client
+
+with Client() as client:
+    schedule = client.schedule(date='2024-06-01')
+    box = client.boxscore(schedule.dates[0].games[0].game_pk)
+```
+
+The session is opened on `__enter__` and closed on `__exit__`.
+
+---
+
+## Error Handling
+
+All exceptions inherit from `mlbapi.MLBAPIException`.
+
+```python
+from mlbapi import Client, ParameterException, ObjectNotFoundException, RequestException
+
+client = Client()
+
+try:
+    box = client.boxscore(716463)
+except ParameterException as e:
+    print(f'Bad parameter: {e}')
+except ObjectNotFoundException as e:
+    print(f'Not found: {e}')
+except RequestException as e:
+    print(f'Network error: {e}')
+```
+
+| Exception | Raised when |
+|---|---|
+| `ParameterException` | An invalid kwarg is passed to an endpoint method |
+| `ObjectNotFoundException` | The API returned an error message (bad ID, etc.) |
+| `RequestException` | An HTTP/network error occurred |
+| `ImplementationException` | An unsupported endpoint was requested |
+
+---
+
+## Available Methods
+
+| Method | Description |
+|---|---|
+| `client.schedule(**kwargs)` | Game schedule by date/team/sport |
+| `client.boxscore(game_pk)` | Full box score for a game |
+| `client.linescore(game_pk)` | Live linescore (count, bases, pitcher/batter) |
+| `client.play_by_play(game_pk)` | Play-by-play data |
+| `client.live_diff(game_pk)` | Live feed diff/patch (v1.1) |
+| `client.standings(**kwargs)` | League standings |
+| `client.teams(**kwargs)` | Team information |
+| `client.divisions(**kwargs)` | Division information |
+| `client.conferences(**kwargs)` | Conference information |
+| `client.seasons(**kwargs)` | Season information |
+| `client.all_seasons(**kwargs)` | All seasons |
+| `client.venues(**kwargs)` | Venue information |
+| `client.draft(year)` | Draft picks for a year |
+| `client.draft_prospects(**kwargs)` | Draft prospects |
+| `client.draft_latest(year)` | Latest draft picks |
+| `client.stats(**kwargs)` | Player/team stats |
+| `client.stats_leaders(**kwargs)` | Stats leaders |
+| `client.stats_streaks(**kwargs)` | Stats streaks |
+| `client.homerunderby(game_pk)` | Home Run Derby data |
+| `client.attendance(**kwargs)` | Attendance data |
+| `client.awards(**kwargs)` | Awards |
+| `client.award_recipients(award_id)` | Recipients for an award |
+| `client.jobs(**kwargs)` | Job listings |
+| `client.umpires(**kwargs)` | Umpire roster |
+| `client.transactions(**kwargs)` | Transaction data |
+| `client.meta(meta_type)` | Lookup table values |
+
+---
 
 ## Team IDs
 
-Common MLB team IDs for reference:
+| Team | ID | Team | ID |
+|---|---|---|---|
+| Yankees | 147 | Dodgers | 119 |
+| Red Sox | 111 | Giants | 137 |
+| Astros | 117 | Cubs | 112 |
+| Braves | 144 | Cardinals | 138 |
+| Mets | 121 | Padres | 135 |
 
-|Team   |ID |Team     |ID |
-|-------|---|---------|---|
-|Yankees|147|Dodgers  |119|
-|Red Sox|111|Giants   |137|
-|Astros |117|Cubs     |112|
-|Braves |144|Cardinals|138|
-|Mets   |121|Padres   |135|
+Full list: `client.teams()`
 
-A full list is available via `mlbapi.teams()`.
-
------
-
-## Documentation
-
-Full documentation and endpoint reference coming soon. In the meantime, feel free to [open an issue](https://github.com/trevor-viljoen/mlbapi/issues) with questions.
-
------
+---
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request. Bug reports and feature requests can be filed as [GitHub Issues](https://github.com/trevor-viljoen/mlbapi/issues).
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request. Bug reports and feature requests can be filed as [GitHub Issues](https://github.com/trevor-viljoen/mlbapi/issues).
 
------
+---
 
 ## Support the Project
 
@@ -126,13 +232,13 @@ If `mlbapi` saves you time, consider supporting its development:
 - 💛 **[Sponsor on GitHub](https://github.com/sponsors/trevor-viljoen)**
 - ☕ **[Donate via PayPal](https://paypal.me/trevorviljoen)**
 
------
+---
 
 ## License
 
 This project is licensed under the terms found in [LICENSE](LICENSE).
 
------
+---
 
 ## Disclaimer
 

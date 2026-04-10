@@ -15,7 +15,8 @@ from mlbapi.data import request
 from mlbapi.utils import check_kwargs
 
 
-VALID_SEASON_PARAMS = ['season', 'sport_id', 'division_id', 'league_id', 'fields']
+VALID_SEASON_PARAMS = ['season', 'sport_id', 'division_id', 'league_id',
+                       'with_game_type_dates', 'fields']
 
 
 def get_seasons(**kwargs):

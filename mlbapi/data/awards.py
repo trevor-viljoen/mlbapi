@@ -15,7 +15,7 @@ from mlbapi.data import request
 from mlbapi.utils import check_kwargs
 
 
-VALID_AWARDS_PARAMS = ['sport_id', 'league_id', 'season', 'hydrate', 'fields']
+VALID_AWARDS_PARAMS = ['award_id', 'sport_id', 'league_id', 'season', 'hydrate', 'fields']
 
 
 def get_awards(**kwargs):

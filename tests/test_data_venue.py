@@ -65,5 +65,5 @@ class TestGetVenues:
 
     def test_valid_params_list(self):
         assert set(venue_data.VALID_VENUE_PARAMS) == {
-            'venue_ids', 'season', 'hydrate', 'fields'
+            'venue_ids', 'season', 'hydrate', 'fields', 'active', 'include_legacy'
         }
