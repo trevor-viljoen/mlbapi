@@ -314,6 +314,25 @@ DIVISIONS_DATA = {
     ]
 }
 
+LEAGUES_DATA = {
+    'leagues': [
+        {
+            'id': 103,
+            'name': 'American League',
+            'link': '/api/v1/league/103',
+            'abbreviation': 'AL',
+            'nameShort': 'American',
+            'seasonState': 'offseason',
+            'hasWildCard': True,
+            'hasSplitSeason': False,
+            'numGames': 162,
+            'numTeams': 16,
+            'season': '2024',
+            'active': True,
+        }
+    ]
+}
+
 CONFERENCES_DATA = {
     'conferences': [
         {'id': 203, 'name': 'American League', 'link': '/api/v1/conferences/203',

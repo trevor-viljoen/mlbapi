@@ -183,9 +183,15 @@ except RequestException as e:
 | `client.linescore(game_pk)` | Live linescore (count, bases, pitcher/batter) |
 | `client.play_by_play(game_pk)` | Play-by-play data |
 | `client.live_diff(game_pk)` | Live feed diff/patch (v1.1) |
+| `client.color_feed(game_pk)` | Full color feed (v1.1) |
+| `client.color_diff(game_pk)` | Color feed diff/patch (v1.1) |
+| `client.color_timestamps(game_pk)` | Color feed timestamps (v1.1) |
 | `client.standings(**kwargs)` | League standings |
 | `client.teams(**kwargs)` | Team information |
 | `client.divisions(**kwargs)` | Division information |
+| `client.leagues(**kwargs)` | League information |
+| `client.league_allstar_ballot(league_id)` | All-star ballot for a league |
+| `client.league_allstar_writeins(league_id)` | All-star write-in ballot for a league |
 | `client.conferences(**kwargs)` | Conference information |
 | `client.seasons(**kwargs)` | Season information |
 | `client.all_seasons(**kwargs)` | All seasons |

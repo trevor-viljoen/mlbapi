@@ -55,6 +55,7 @@ from mlbapi.data.standings import VALID_STANDINGS_PARAMS
 from mlbapi.data.team import VALID_TEAMS_PARAMS
 from mlbapi.data.division import VALID_DIVISION_PARAMS
 from mlbapi.data.conference import VALID_CONFERENCE_PARAMS
+from mlbapi.data.league import VALID_LEAGUE_PARAMS, VALID_LEAGUE_ALLSTAR_PARAMS
 from mlbapi.data.season import VALID_SEASON_PARAMS
 from mlbapi.data.venue import VALID_VENUE_PARAMS
 from mlbapi.data.draft import VALID_DRAFT_PARAMS
@@ -76,6 +77,7 @@ from mlbapi.data.people import VALID_PEOPLE_PARAMS, VALID_PEOPLE_SEARCH_PARAMS
 from mlbapi.models.attendance import Attendance
 from mlbapi.models.awards import Awards
 from mlbapi.models.conference import Conferences
+from mlbapi.models.league import Leagues
 from mlbapi.models.division import Divisions
 from mlbapi.models.draft import Draft
 from mlbapi.models.game import BoxScore, LineScore
@@ -292,6 +294,26 @@ class Client:
                              valid_params=VALID_LIVE_TIMESTAMPS_PARAMS,
                              api_version='v1.1', **kwargs)
 
+    def color_feed(self, game_pk: int, **kwargs) -> dict:
+        """Full color feed for a game (v1.1 — raw dict)."""
+        return self._request(endpoint.GAME, 'feed/color', primary_key=game_pk,
+                             valid_params=VALID_COLOR_PARAMS,
+                             api_version='v1.1', **kwargs)
+
+    def color_diff(self, game_pk: int, **kwargs) -> dict:
+        """Color feed diff/patch (v1.1 — raw dict)."""
+        return self._request(endpoint.GAME, 'feed/color/diffPatch',
+                             primary_key=game_pk,
+                             valid_params=VALID_COLOR_DIFF_PARAMS,
+                             api_version='v1.1', **kwargs)
+
+    def color_timestamps(self, game_pk: int, **kwargs) -> dict:
+        """Color feed timestamps (v1.1 — raw dict)."""
+        return self._request(endpoint.GAME, 'feed/color/timestamps',
+                             primary_key=game_pk,
+                             valid_params=VALID_COLOR_TIMESTAMPS_PARAMS,
+                             api_version='v1.1', **kwargs)
+
     def win_probability(self, game_pk: int, **kwargs) -> dict:
         """Win probability data (raw dict)."""
         return self._request(endpoint.GAME, 'winProbability',
@@ -376,6 +398,28 @@ class Client:
         data = self._request(endpoint.CONFERENCE,
                              valid_params=VALID_CONFERENCE_PARAMS, **kwargs)
         return Conferences.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # Leagues
+    # ------------------------------------------------------------------
+
+    def leagues(self, **kwargs) -> Leagues:
+        """League information."""
+        data = self._request(endpoint.LEAGUE,
+                             valid_params=VALID_LEAGUE_PARAMS, **kwargs)
+        return Leagues.model_validate(data)
+
+    def league_allstar_ballot(self, league_id: int, **kwargs) -> dict:
+        """All-star ballot for a league (raw dict)."""
+        return self._request(endpoint.LEAGUE, 'allStarFinalVote',
+                             primary_key=league_id,
+                             valid_params=VALID_LEAGUE_ALLSTAR_PARAMS, **kwargs)
+
+    def league_allstar_writeins(self, league_id: int, **kwargs) -> dict:
+        """All-star write-in ballot for a league (raw dict)."""
+        return self._request(endpoint.LEAGUE, 'allStarWriteIns',
+                             primary_key=league_id,
+                             valid_params=VALID_LEAGUE_ALLSTAR_PARAMS, **kwargs)
 
     # ------------------------------------------------------------------
     # Seasons

@@ -229,6 +229,61 @@ class TestLinescore:
             _client(LINESCORE_DATA).linescore(716463, not_valid='x')
 
 
+class TestColorFeed:
+    def test_returns_dict(self):
+        assert isinstance(_client({}).color_feed(716463), dict)
+
+    def test_uses_v1_1(self):
+        session = MagicMock(spec=requests.Session)
+        session.get.return_value = _mock_response({})
+        Client(session=session).color_feed(716463)
+        url = session.get.call_args[0][0]
+        assert 'v1.1' in url
+
+    def test_uses_color_path(self):
+        session = MagicMock(spec=requests.Session)
+        session.get.return_value = _mock_response({})
+        Client(session=session).color_feed(716463)
+        url = session.get.call_args[0][0]
+        assert 'feed/color' in url
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client({}).color_feed(716463, not_valid='x')
+
+
+class TestColorDiff:
+    def test_returns_dict(self):
+        assert isinstance(_client({}).color_diff(716463), dict)
+
+    def test_uses_v1_1(self):
+        session = MagicMock(spec=requests.Session)
+        session.get.return_value = _mock_response({})
+        Client(session=session).color_diff(716463)
+        url = session.get.call_args[0][0]
+        assert 'v1.1' in url
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client({}).color_diff(716463, not_valid='x')
+
+
+class TestColorTimestamps:
+    def test_returns_dict(self):
+        assert isinstance(_client([]).color_timestamps(716463), list)
+
+    def test_uses_v1_1(self):
+        session = MagicMock(spec=requests.Session)
+        session.get.return_value = _mock_response([])
+        Client(session=session).color_timestamps(716463)
+        url = session.get.call_args[0][0]
+        assert 'v1.1' in url
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client([]).color_timestamps(716463, not_valid='x')
+
+
 # ---------------------------------------------------------------------------
 # Schedule
 # ---------------------------------------------------------------------------
@@ -357,6 +412,7 @@ class TestErrorHandling:
 # ---------------------------------------------------------------------------
 
 from mlbapi.models.conference import Conferences
+from mlbapi.models.league import Leagues
 from mlbapi.models.season import Seasons
 from mlbapi.models.venue import Venues
 from mlbapi.models.draft import Draft
@@ -367,11 +423,35 @@ from mlbapi.models.awards import Awards
 from mlbapi.models.jobs import Jobs
 from mlbapi.models.transactions import Transactions
 from tests.conftest import (
-    CONFERENCES_DATA, SEASONS_DATA, VENUES_DATA, DRAFT_DATA,
+    LEAGUES_DATA, CONFERENCES_DATA, SEASONS_DATA, VENUES_DATA, DRAFT_DATA,
     STATS_DATA, STATS_LEADERS_DATA, HOMERUNDERBY_DATA,
     ATTENDANCE_DATA, AWARDS_DATA, JOBS_DATA, TRANSACTIONS_DATA,
     META_DATA, SPORT_DATA,
 )
+
+
+class TestLeagues:
+    def test_returns_leagues(self):
+        assert isinstance(_client(LEAGUES_DATA).leagues(), Leagues)
+
+    def test_league_count(self):
+        assert len(_client(LEAGUES_DATA).leagues().leagues) == 1
+
+    def test_league_name(self):
+        result = _client(LEAGUES_DATA).leagues()
+        assert result.leagues[0].name == 'American League'
+
+    def test_league_id(self):
+        result = _client(LEAGUES_DATA).leagues()
+        assert result.leagues[0].id == 103
+
+    def test_league_abbreviation(self):
+        result = _client(LEAGUES_DATA).leagues()
+        assert result.leagues[0].abbreviation == 'AL'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(LEAGUES_DATA).leagues(not_valid='x')
 
 
 class TestConferences:

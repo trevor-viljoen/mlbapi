@@ -11,6 +11,13 @@ endpoints.
 
 from mlbapi.data import request
 from mlbapi import endpoint
+from mlbapi import exceptions
+from mlbapi.utils import check_kwargs
+
+
+VALID_LEAGUE_PARAMS = ['league_id', 'league_ids', 'season', 'seasons',
+                       'expand', 'fields']
+VALID_LEAGUE_ALLSTAR_PARAMS = ['league_ids', 'season', 'fields']
 
 
 def get_league(league_id, **kwargs):
@@ -51,6 +58,7 @@ def get_league(league_id, **kwargs):
     Returns:
         json
     """
+    check_kwargs(kwargs.keys(), VALID_LEAGUE_PARAMS, exceptions.ParameterException)
     return request(endpoint.LEAGUE, primary_key=league_id, **kwargs)
 
 def get_league_all_stars(league_id, write_ins=False, **kwargs):
@@ -83,6 +91,7 @@ def get_league_all_stars(league_id, write_ins=False, **kwargs):
     Returns:
         json
     """
+    check_kwargs(kwargs.keys(), VALID_LEAGUE_ALLSTAR_PARAMS, exceptions.ParameterException)
     if write_ins:
         context = 'allStarWriteIns'
     else:
