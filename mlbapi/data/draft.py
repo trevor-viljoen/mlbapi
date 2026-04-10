@@ -16,7 +16,8 @@ from mlbapi.utils import check_kwargs
 
 
 VALID_DRAFT_PARAMS = ['limit', 'round', 'name', 'school', 'state', 'country',
-                      'position', 'team_id', 'player_id', 'bis_player_id', 'fields']
+                      'position', 'team_id', 'player_id', 'bis_player_id',
+                      'bisb', 'is_pass', 'hydrate', 'fields']
 
 
 def get_draft(year, **kwargs):

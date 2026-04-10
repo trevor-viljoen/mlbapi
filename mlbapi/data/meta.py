@@ -2,63 +2,72 @@
 # -*- coding: utf-8 -*-
 """mlbapi functions for the meta/lookup API endpoints.
 
-This module's functions get the JSON payloads for the mlb.com meta (lookup
-table) API endpoints. These endpoints return valid values for parameters used
-in other API calls.
+These endpoints return valid values for parameters used in other API calls.
+Each meta_type maps to ``GET /api/v1/{meta_type}``.
 
 .. _Google Python Style Guide:
    http://google.github.io/styleguide/pyguide.html
 """
 
-import mlbapi.exceptions
-from mlbapi.data import request
+import requests
 
+import mlbapi.exceptions
+
+BASE_URL = 'https://statsapi.mlb.com/api/v1'
+_HEADERS = {'User-Agent': 'mlbapi', 'Accept-encoding': 'gzip'}
 
 VALID_META_TYPES = [
-    'gameTypes',
+    'awards',
+    'baseballStats',
+    'eventTypes',
+    'fielderStatuses',
     'gameStatus',
+    'gameTypes',
+    'hitTrajectories',
+    'jobTypes',
+    'languages',
+    'leagueLeaderTypes',
+    'logicalEvents',
+    'metrics',
+    'pitchCodes',
+    'pitchTypes',
+    'platforms',
+    'positions',
+    'reviewReasons',
+    'rosterTypes',
+    'scheduleEventTypes',
+    'sitCodes',
+    'situationCodes',
+    'sky',
     'standingsTypes',
     'statGroups',
     'statTypes',
-    'pitchTypes',
-    'hitTrajectories',
-    'fielderStatuses',
-    'positions',
-    'eventTypes',
-    'metrics',
-    'windDirection',
-    'sky',
-    'pitchCodes',
-    'languages',
-    'leagueLeaderTypes',
-    'rosterTypes',
-    'scheduleEventTypes',
-    'situationCodes',
     'transactionTypes',
+    'windDirection',
 ]
 
 
-def get_meta(meta_type):
-    """This endpoint allows you to pull lookup table data (meta) for
-    valid parameter values used in other API calls.
-
-    The meta_type IS the endpoint path segment, so the URL produced is
-    ``/api/v1/{meta_type}``.
+def get_meta(meta_type: str) -> dict:
+    """Return lookup-table data for *meta_type* (``GET /api/v1/{meta_type}``).
 
     Args:
-        meta_type (str): The lookup table type.  Must be one of the strings in
-            ``VALID_META_TYPES`` (e.g. ``'gameTypes'``, ``'statGroups'``).
+        meta_type (str): One of the strings in ``VALID_META_TYPES``,
+            e.g. ``'gameTypes'``, ``'statGroups'``.
 
     Returns:
-        json (list or dict)
+        dict or list — the raw parsed JSON response.
 
     Raises:
         mlbapi.exceptions.ParameterException: if meta_type is not recognised.
     """
     if meta_type not in VALID_META_TYPES:
         raise mlbapi.exceptions.ParameterException(
-            '{} is not a valid meta type. Valid types: {}'.format(
-                meta_type, ', '.join(VALID_META_TYPES)
-            )
+            f'Invalid meta_type {meta_type!r}. '
+            f'Valid types: {VALID_META_TYPES}'
         )
-    return request(meta_type)
+    resp = requests.get(
+        f'{BASE_URL}/{meta_type}',
+        headers=_HEADERS,
+        timeout=10,
+    )
+    return resp.json()

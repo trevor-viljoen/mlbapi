@@ -15,7 +15,7 @@ from mlbapi.data import request
 from mlbapi.utils import check_kwargs
 
 
-VALID_VENUE_PARAMS = ['venue_ids', 'season', 'hydrate', 'fields']
+VALID_VENUE_PARAMS = ['venue_ids', 'season', 'hydrate', 'fields', 'active', 'include_legacy']
 
 
 def get_venues(**kwargs):

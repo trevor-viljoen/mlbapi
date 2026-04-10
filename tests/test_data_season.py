@@ -75,7 +75,8 @@ class TestGetSeasons:
 
     def test_valid_params_list(self):
         assert set(season_data.VALID_SEASON_PARAMS) == {
-            'season', 'sport_id', 'division_id', 'league_id', 'fields'
+            'season', 'sport_id', 'division_id', 'league_id',
+            'with_game_type_dates', 'fields'
         }
 
 

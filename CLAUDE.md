@@ -17,39 +17,51 @@ pytest --cov=mlbapi --cov-report=term-missing
 
 ## Architecture
 
-Two-layer design separating HTTP concerns from data modeling:
+Two-layer design separating HTTP concerns from data modelling:
 
 - **Data layer** (`mlbapi/data/`): Validates parameters and makes raw HTTP requests returning JSON dicts
-- **Object layer** (`mlbapi/object/`): Python objects that wrap the JSON dicts for attribute-style access
+- **Models layer** (`mlbapi/models/`): Pydantic v2 models that wrap the JSON dicts for attribute-style access and type safety
+
+All public access goes through the `Client` class in `mlbapi/client.py`. There are no module-level convenience functions.
 
 ### Request Flow
 
-1. Public API function (e.g., `mlbapi.schedule()`) calls a data layer function
-2. Data layer validates kwargs against a `VALID_*_PARAMS` list, then calls `mlbapi.data.request()`
-3. `request()` builds the URL, sets headers, calls `requests.get()`, returns JSON
-4. The public API function wraps the JSON in an object layer class and returns it
+1. Caller instantiates `Client` and calls an endpoint method (e.g., `client.schedule(date='2024-06-01')`)
+2. `Client._request()` validates kwargs against the endpoint's `VALID_*_PARAMS` list, builds the URL, and calls `Client._get()`
+3. `Client._get()` executes the HTTP GET (using an injected `requests.Session` or bare `requests.get`) and returns a JSON dict
+4. The endpoint method wraps the dict in a Pydantic model and returns it
+
+For unsupported or not-yet-wrapped endpoints use `client.get(path, **params)` to get the raw JSON dict.
 
 ### Key Files
 
 | File | Purpose |
 |---|---|
-| `mlbapi/__init__.py` | Public API entry point |
+| `mlbapi/__init__.py` | Public re-exports (`Client`, exceptions, `__version__`) |
+| `mlbapi/client.py` | Sole public entry point — all 25+ endpoint methods live here |
 | `mlbapi/endpoint.py` | API endpoint string constants |
 | `mlbapi/exceptions.py` | Custom exception classes |
-| `mlbapi/utils.py` | Shared utility functions (case conversion, validation) |
-| `mlbapi/data/__init__.py` | Core HTTP request logic and URL construction |
-| `mlbapi/data/game.py` | Game endpoints (boxscore, linescore, play-by-play, live) |
-| `mlbapi/data/schedule.py` | Schedule endpoint — primary implementation, class-based |
-| `mlbapi/data/gameday.py` | Schedule endpoint — mlbgame migration compatibility wrapper |
-| `mlbapi/data/standings.py` | Standings endpoints |
-| `mlbapi/data/team.py` | Team endpoints |
-| `mlbapi/data/division.py` | Division endpoints |
+| `mlbapi/utils.py` | Shared utility functions (case conversion, param validation) |
+| `mlbapi/data/__init__.py` | URL construction (`get_api_url`) |
+| `mlbapi/data/game.py` | `VALID_*_PARAMS` lists for game endpoints |
+| `mlbapi/data/schedule.py` | `VALID_SCHEDULE_PARAMS` and `get_schedule()` |
+| `mlbapi/data/standings.py` | `VALID_STANDINGS_PARAMS` and `get_standings()` |
+| `mlbapi/data/team.py` | `VALID_TEAMS_PARAMS` and `get_teams()` |
+| `mlbapi/data/division.py` | `VALID_DIVISION_PARAMS` and `get_divisions()` |
+| `mlbapi/models/__init__.py` | `MLBModel` base class (Pydantic v2, camelCase normalisation) |
+| `mlbapi/models/game.py` | `BoxScore`, `LineScore` models |
+| `mlbapi/models/schedule.py` | `Schedule`, `Date`, `Game` models |
+| `mlbapi/models/standings.py` | `Standings`, `StandingsRecord` models |
+| `mlbapi/models/team.py` | `Teams`, `Team` models |
+| `mlbapi/models/division.py` | `Divisions`, `Division` models |
+| `mlbapi/models/common.py` | Shared reference types (`PersonRef`, `TeamRef`, etc.) |
 
 ## Code Standards
 
 - [Google Python Style Guide](http://google.github.io/styleguide/pyguide.html)
-- All new functions require tests in `tests/`
-- Python snake_case kwargs are converted to/from camelCase API params via `mlbapi/utils.py`
+- All new endpoint methods require tests in `tests/`
+- Python snake_case kwargs are converted to camelCase API params via `mlbapi/utils.py`
+- Models inherit from `MLBModel` (Pydantic v2 `BaseModel`)
 
 ## API Base URL
 
@@ -57,28 +69,22 @@ Two-layer design separating HTTP concerns from data modeling:
 
 Note: The live game feed endpoints (`feed/live`, `feed/live/diffPatch`,
 `feed/live/timestamps`) use **v1.1** instead of v1. Pass `api_version='v1.1'`
-to `mlbapi.data.request()` for these.
+to `Client._request()` for these.
 
-## Historical Context
+## Models Layer
 
-### Origin of `VALID_*_PARAMS` lists
+All models inherit from `MLBModel` (`mlbapi/models/__init__.py`):
 
-All parameter lists were transcribed directly from the MLB StatsAPI swagger
-documentation at the time each endpoint was implemented. camelCase API params
-were converted to snake_case Python kwargs. Some params (e.g.
-`calendar_types`, `performer_ids`, `use_latest_games`) may no longer appear in
-the current API — they were valid when originally documented.
-
-### `data/schedule.py` vs `data/gameday.py`
-
-Two modules wrap the same `/schedule` API endpoint:
-
-- `data/schedule.py` — the primary implementation. Class-based interface
-  (`Schedule.get_schedule()`), params taken directly from the swagger docs.
-- `data/gameday.py` — a migration compatibility shim written to help users move
-  from [panzarino/mlbgame](https://github.com/panzarino/mlbgame), a predecessor
-  library that parsed MLB's legacy XML API. The "gameday" concept maps to the
-  old XML feed's structure. Users migrating from mlbgame should be directed here.
+- **camelCase normalisation**: a `model_validator(mode="before")` converts every
+  incoming key with `inflection.underscore()`, so `gamePk` becomes `game_pk`
+  automatically — no field aliases needed in subclasses.
+- **Extra fields allowed**: `extra="allow"` means unknown API keys are stored as
+  attributes, so new API fields never break existing code.
+- **Positional dict init**: `MLBModel(data_dict)` is accepted for legacy
+  call-sites; internally this calls `super().__init__(**data_dict)` which still
+  runs all validators.
+- **Serialisation**: `model.model_dump()` (preferred) or the legacy `model.json()`
+  both return a plain Python dict.
 
 ## Exception Hierarchy
 
@@ -86,21 +92,23 @@ Two modules wrap the same `/schedule` API endpoint:
 MLBAPIException
 ├── RequestException        - HTTP/network failure (wraps requests.exceptions.RequestException)
 ├── ImplementationException - Unsupported endpoint
-├── ObjectNotFoundException - API returned an error message
-└── ParameterException      - Invalid kwargs passed to a data function
+├── ObjectNotFoundException - API returned an error message (bad ID, etc.)
+└── ParameterException      - Invalid kwargs passed to an endpoint method
 ```
 
 ## Supported Endpoints
 
-| Endpoint | Module | Description |
-|---|---|---|
-| `game` | `data/game.py` | Boxscore, linescore, play-by-play, live feed (v1.1), win probability |
-| `schedule` | `data/schedule.py` | Game schedules by date/team (primary) |
-| `schedule` | `data/gameday.py` | Game schedules — mlbgame migration compat |
-| `standings` | `data/standings.py` | League standings |
-| `teams` | `data/team.py` | Team information |
-| `divisions` | `data/division.py` | Division information |
-| `sports` | `data/sport.py` | Sports information |
+| Endpoint | Data module | Model | Description |
+|---|---|---|---|
+| `game/{pk}/boxscore` | `data/game.py` | `models/game.py` | Full box score |
+| `game/{pk}/linescore` | `data/game.py` | `models/game.py` | Live linescore |
+| `game/{pk}/playByPlay` | `data/game.py` | raw dict | Play-by-play |
+| `game/{pk}/feed/live` | `data/game.py` | raw dict | Live feed (v1.1) |
+| `schedule` | `data/schedule.py` | `models/schedule.py` | Game schedule |
+| `standings` | `data/standings.py` | `models/standings.py` | League standings |
+| `teams` | `data/team.py` | `models/team.py` | Team information |
+| `divisions` | `data/division.py` | `models/division.py` | Division information |
+| `sports` | `data/sport.py` | raw dict | Sports information |
 
 ## Stub Modules (Not Yet Implemented)
 
@@ -121,11 +129,20 @@ Additionally, the following endpoints have constants defined but no module yet:
 - `GAME_PACE` → `/api/v1/gamePace`
 - `HIGH_LOW` → `/api/v1/highLow/{orgType}`
 
+Use `client.get('/v1/<endpoint>', **params)` to access any of these until they get a dedicated method.
+
 ## Adding a New Endpoint
 
 1. Add the endpoint constant to `mlbapi/endpoint.py`
-2. Add the endpoint string to `SUPPORTED_ENDPOINTS` in `mlbapi/data/__init__.py`
-3. Create the data module in `mlbapi/data/<name>.py` with a `VALID_*_PARAMS` list and `get_*()` functions
-4. Create the object class(es) in `mlbapi/object/<name>.py`
-5. Export the public function from `mlbapi/__init__.py`
-6. Write tests in `tests/`
+2. Create the data module `mlbapi/data/<name>.py` with a `VALID_*_PARAMS` list
+3. Create the Pydantic model in `mlbapi/models/<name>.py` inheriting from `MLBModel`
+4. Add a method to `Client` in `mlbapi/client.py` that calls `self._request(...)` and wraps the result
+5. Write tests in `tests/`
+
+## Origin of `VALID_*_PARAMS` Lists
+
+All parameter lists were transcribed from the MLB StatsAPI swagger documentation
+at the time each endpoint was implemented. camelCase API params were converted to
+snake_case Python kwargs. Some params (e.g. `calendar_types`, `performer_ids`,
+`use_latest_games`) may no longer appear in the current API — they were valid
+when originally documented.
