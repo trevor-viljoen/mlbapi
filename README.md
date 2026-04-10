@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/mlbapi.svg)](https://pypi.org/project/mlbapi/)
 [![Python versions](https://img.shields.io/pypi/pyversions/mlbapi.svg)](https://pypi.org/project/mlbapi/)
-[![License](https://img.shields.io/github/license/trevor-viljoen/mlbapi.svg)](https://github.com/trevor-viljoen/mlbapi/blob/dev/LICENSE)
+[![License](https://img.shields.io/github/license/trevor-viljoen/mlbapi.svg)](https://github.com/trevor-viljoen/mlbapi/blob/master/LICENSE)
 [![Stars](https://img.shields.io/github/stars/trevor-viljoen/mlbapi?style=social)](https://github.com/trevor-viljoen/mlbapi/stargazers)
 
 **mlbapi** is a Python 3 client for the [MLB StatsAPI](https://statsapi.mlb.com/) — the data source that powers MLB.com's live game data, box scores, standings, and more.
@@ -215,6 +215,12 @@ except RequestException as e:
 | Mets | 121 | Padres | 135 |
 
 Full list: `client.teams()`
+
+---
+
+## Migrating from mlbgame
+
+Coming from [panzarino/mlbgame](https://github.com/panzarino/mlbgame)? See the [migration guide](docs/migrating_from_mlbgame.md) for a function-by-function mapping.
 
 ---
 
