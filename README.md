@@ -174,6 +174,14 @@ except RequestException as e:
 
 ---
 
+## Hydrations
+
+Many endpoints accept a `hydrate` parameter that embeds additional data inline,
+saving extra requests. See the **[hydrations guide](docs/hydrations.md)** for
+supported values and examples across schedule, people, teams, venues, and stats.
+
+---
+
 ## Available Methods
 
 | Method | Description |
