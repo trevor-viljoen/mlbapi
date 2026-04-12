@@ -482,3 +482,30 @@ SPORT_DATA = {
          'sortOrder': 11, 'activeStatus': True},
     ]
 }
+
+ROSTER_DATA = {
+    'teamId': 147,
+    'rosterType': 'active',
+    'roster': [
+        {
+            'person': {'id': 592450, 'fullName': 'Aaron Judge', 'link': '/api/v1/people/592450'},
+            'jerseyNumber': '99',
+            'position': {'code': '8', 'name': 'Outfielder', 'type': 'Outfielder', 'abbreviation': 'CF'},
+            'status': {'code': 'A', 'description': 'Active'},
+        },
+    ],
+}
+
+COACHES_DATA = {
+    'teamId': 147,
+    'rosterType': 'coach',
+    'roster': [
+        {
+            'person': {'id': 111213, 'fullName': 'Aaron Boone', 'link': '/api/v1/people/111213'},
+            'jerseyNumber': '17',
+            'job': 'Manager',
+            'jobId': 'MNGR',
+            'title': 'Manager',
+        },
+    ],
+}

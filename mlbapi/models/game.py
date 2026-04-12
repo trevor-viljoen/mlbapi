@@ -8,10 +8,10 @@ All classes inherit from MLBModel which provides:
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import inflection
-from pydantic import computed_field, field_validator, model_validator
+from pydantic import field_validator, model_validator
 
 from mlbapi.models import MLBModel
 from mlbapi.models.common import (
@@ -283,13 +283,6 @@ class Official(MLBModel):
 class Info(MLBModel):
     label: Optional[str] = None
     value: Optional[str] = None
-
-    @computed_field
-    @property
-    def info(self) -> Union[str, tuple, None]:
-        if self.value:
-            return (self.label, self.value)
-        return self.label
 
 
 # ---------------------------------------------------------------------------

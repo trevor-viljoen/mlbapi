@@ -15,10 +15,12 @@ from mlbapi.models.game import BoxScore, LineScore
 from mlbapi.models.schedule import Schedule
 from mlbapi.models.standings import Standings
 from mlbapi.models.team import Teams
+from mlbapi.models.roster import Roster
 from mlbapi.models.division import Divisions
 from tests.conftest import (
     BOXSCORE_DATA, LINESCORE_DATA, SCHEDULE_DATA,
     STANDINGS_DATA, TEAMS_DATA, DIVISIONS_DATA,
+    ROSTER_DATA, COACHES_DATA,
 )
 
 
@@ -369,6 +371,92 @@ class TestTeams:
     def test_invalid_param_raises(self):
         with pytest.raises(ParameterException):
             _client(TEAMS_DATA).teams(not_valid='x')
+
+
+class TestRoster:
+    def test_returns_roster(self):
+        assert isinstance(_client(ROSTER_DATA).roster(147), Roster)
+
+    def test_player_count(self):
+        assert len(_client(ROSTER_DATA).roster(147).roster) == 1
+
+    def test_player_name(self):
+        result = _client(ROSTER_DATA).roster(147)
+        assert result.roster[0].person.full_name == 'Aaron Judge'
+
+    def test_jersey_number(self):
+        assert _client(ROSTER_DATA).roster(147).roster[0].jersey_number == '99'
+
+    def test_position(self):
+        assert _client(ROSTER_DATA).roster(147).roster[0].position.name == 'Outfielder'
+
+    def test_team_id(self):
+        assert _client(ROSTER_DATA).roster(147).team_id == 147
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(ROSTER_DATA).roster(147, not_valid='x')
+
+
+class TestCoaches:
+    def test_returns_roster(self):
+        assert isinstance(_client(COACHES_DATA).coaches(147), Roster)
+
+    def test_coach_count(self):
+        assert len(_client(COACHES_DATA).coaches(147).roster) == 1
+
+    def test_coach_name(self):
+        result = _client(COACHES_DATA).coaches(147)
+        assert result.roster[0].person.full_name == 'Aaron Boone'
+
+    def test_coach_job(self):
+        assert _client(COACHES_DATA).coaches(147).roster[0].job == 'Manager'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(COACHES_DATA).coaches(147, not_valid='x')
+
+
+class TestGetTeamId:
+    def test_exact_match(self):
+        assert _client(TEAMS_DATA).get_team_id('New York Yankees') == 147
+
+    def test_partial_match(self):
+        assert _client(TEAMS_DATA).get_team_id('Yankees') == 147
+
+    def test_case_insensitive(self):
+        assert _client(TEAMS_DATA).get_team_id('yankees') == 147
+
+    def test_no_match_raises(self):
+        with pytest.raises(ObjectNotFoundException):
+            _client(TEAMS_DATA).get_team_id('Nonexistent Team')
+
+
+class TestGetLeagueId:
+    def test_match_by_name(self):
+        from tests.conftest import LEAGUES_DATA
+        assert _client(LEAGUES_DATA).get_league_id('American League') == 103
+
+    def test_match_by_abbreviation(self):
+        from tests.conftest import LEAGUES_DATA
+        assert _client(LEAGUES_DATA).get_league_id('AL') == 103
+
+    def test_no_match_raises(self):
+        from tests.conftest import LEAGUES_DATA
+        with pytest.raises(ObjectNotFoundException):
+            _client(LEAGUES_DATA).get_league_id('Nonexistent')
+
+
+class TestGetDivisionId:
+    def test_match_by_name(self):
+        assert _client(DIVISIONS_DATA).get_division_id('American League East') == 201
+
+    def test_partial_match(self):
+        assert _client(DIVISIONS_DATA).get_division_id('AL East') == 201
+
+    def test_no_match_raises(self):
+        with pytest.raises(ObjectNotFoundException):
+            _client(DIVISIONS_DATA).get_division_id('Nonexistent Division')
 
 
 # ---------------------------------------------------------------------------

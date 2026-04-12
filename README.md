@@ -71,7 +71,7 @@ print(box.teams.away.team_stats.batting.model_dump())
 
 # Game info (weather, attendance, etc.)
 for item in box.info:
-    print(item.info)
+    print(item.label, item.value)
 ```
 
 ### Linescore
@@ -196,6 +196,8 @@ supported values and examples across schedule, people, teams, venues, and stats.
 | `client.color_timestamps(game_pk)` | Color feed timestamps (v1.1) |
 | `client.standings(**kwargs)` | League standings |
 | `client.teams(**kwargs)` | Team information |
+| `client.roster(team_id, roster_type)` | Team roster (`'active'`, `'40Man'`, `'fullRoster'`, …) |
+| `client.coaches(team_id)` | Coaching staff for a team |
 | `client.divisions(**kwargs)` | Division information |
 | `client.leagues(**kwargs)` | League information |
 | `client.league_allstar_ballot(league_id)` | All-star ballot for a league |
@@ -219,6 +221,12 @@ supported values and examples across schedule, people, teams, venues, and stats.
 | `client.umpires(**kwargs)` | Umpire roster |
 | `client.transactions(**kwargs)` | Transaction data |
 | `client.meta(meta_type)` | Lookup table values |
+| `client.get_team_id(name)` | Team ID by name (case-insensitive) |
+| `client.get_league_id(name)` | League ID by name or abbreviation |
+| `client.get_division_id(name)` | Division ID by name |
+| `client.get_venue_id(name)` | Venue ID by name |
+| `client.last_game(team_id)` | `game_pk` of team's most recent completed game |
+| `client.next_game(team_id)` | `game_pk` of team's next scheduled game |
 
 ---
 

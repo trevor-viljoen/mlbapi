@@ -52,7 +52,7 @@ from mlbapi.data.game import (
 )
 from mlbapi.data.schedule import VALID_SCHEDULE_PARAMS
 from mlbapi.data.standings import VALID_STANDINGS_PARAMS
-from mlbapi.data.team import VALID_TEAMS_PARAMS
+from mlbapi.data.team import VALID_TEAMS_PARAMS, VALID_ROSTER_PARAMS, VALID_COACHES_PARAMS
 from mlbapi.data.division import VALID_DIVISION_PARAMS
 from mlbapi.data.conference import VALID_CONFERENCE_PARAMS
 from mlbapi.data.league import VALID_LEAGUE_PARAMS, VALID_LEAGUE_ALLSTAR_PARAMS
@@ -90,6 +90,7 @@ from mlbapi.models.season import Seasons
 from mlbapi.models.standings import Standings
 from mlbapi.models.stats import Stats, StatsLeaders
 from mlbapi.models.team import Teams
+from mlbapi.models.roster import Roster
 from mlbapi.models.transactions import Transactions
 from mlbapi.models.venue import Venues
 from mlbapi.models.people import People
@@ -381,6 +382,26 @@ class Client:
                              **kwargs)
         return Teams.model_validate(data)
 
+    def roster(self, team_id: int, roster_type: str = 'active', **kwargs) -> Roster:
+        """Team roster.
+
+        Args:
+            team_id: Unique team identifier.
+            roster_type: One of ``'active'``, ``'40Man'``, ``'fullSeason'``,
+                ``'fullRoster'``, ``'nonRosterInvitees'``, ``'depthChart'``.
+                Defaults to ``'active'``.
+        """
+        data = self._request(endpoint.TEAM, 'roster', primary_key=team_id,
+                             secondary_key=roster_type,
+                             valid_params=VALID_ROSTER_PARAMS, **kwargs)
+        return Roster.model_validate(data)
+
+    def coaches(self, team_id: int, **kwargs) -> Roster:
+        """Coaching staff for a team."""
+        data = self._request(endpoint.TEAM, 'coaches', primary_key=team_id,
+                             valid_params=VALID_COACHES_PARAMS, **kwargs)
+        return Roster.model_validate(data)
+
     # ------------------------------------------------------------------
     # Divisions
     # ------------------------------------------------------------------
@@ -632,3 +653,127 @@ class Client:
         ``mlbapi.data.meta.VALID_META_TYPES``.
         """
         return get_meta(meta_type)
+
+    # ------------------------------------------------------------------
+    # Convenience / lookup helpers
+    # ------------------------------------------------------------------
+
+    def get_team_id(self, name: str) -> int:
+        """Return the team ID for a team matching *name* (case-insensitive).
+
+        Matches against full name, abbreviation, team code, and short name.
+        Raises :exc:`~mlbapi.exceptions.ObjectNotFoundException` if no match.
+        """
+        needle = name.lower()
+        teams = self.teams()
+        for team in teams.teams or []:
+            candidates = [
+                getattr(team, 'name', None),
+                getattr(team, 'abbreviation', None),
+                getattr(team, 'team_code', None),
+                getattr(team, 'short_name', None),
+            ]
+            if any(c and needle in c.lower() for c in candidates):
+                return team.id
+        raise exceptions.ObjectNotFoundException(
+            f'No team found matching {name!r}')
+
+    def get_league_id(self, name: str) -> int:
+        """Return the league ID for a league matching *name* (case-insensitive).
+
+        Matches against full name, abbreviation, and short name.
+        Raises :exc:`~mlbapi.exceptions.ObjectNotFoundException` if no match.
+        """
+        needle = name.lower()
+        leagues = self.leagues()
+        for league in leagues.leagues or []:
+            candidates = [
+                getattr(league, 'name', None),
+                getattr(league, 'abbreviation', None),
+                getattr(league, 'name_short', None),
+            ]
+            if any(c and needle in c.lower() for c in candidates):
+                return league.id
+        raise exceptions.ObjectNotFoundException(
+            f'No league found matching {name!r}')
+
+    def get_division_id(self, name: str, sport_id: int = 1) -> int:
+        """Return the division ID for a division matching *name* (case-insensitive).
+
+        Raises :exc:`~mlbapi.exceptions.ObjectNotFoundException` if no match.
+        """
+        needle = name.lower()
+        divisions = self.divisions(sport_id=sport_id)
+        for div in divisions.divisions or []:
+            candidates = [
+                getattr(div, 'name', None),
+                getattr(div, 'name_short', None),
+                getattr(div, 'abbreviation', None),
+            ]
+            if any(c and needle in c.lower() for c in candidates):
+                return div.id
+        raise exceptions.ObjectNotFoundException(
+            f'No division found matching {name!r}')
+
+    def get_venue_id(self, name: str) -> int:
+        """Return the venue ID for a venue matching *name* (case-insensitive).
+
+        Raises :exc:`~mlbapi.exceptions.ObjectNotFoundException` if no match.
+        """
+        needle = name.lower()
+        venues = self.venues()
+        for venue in venues.venues or []:
+            venue_name = getattr(venue, 'name', None)
+            if venue_name and needle in venue_name.lower():
+                return venue.id
+        raise exceptions.ObjectNotFoundException(
+            f'No venue found matching {name!r}')
+
+    def last_game(self, team_id: int) -> int:
+        """Return the ``game_pk`` of the most recently completed game for a team.
+
+        Searches the past 14 days. Raises
+        :exc:`~mlbapi.exceptions.ObjectNotFoundException` if no completed game
+        is found in that window.
+        """
+        from datetime import date, timedelta
+        today = date.today()
+        start = today - timedelta(days=14)
+        schedule = self.schedule(
+            team_id=team_id,
+            start_date=start.strftime('%m/%d/%Y'),
+            end_date=today.strftime('%m/%d/%Y'),
+        )
+        last_pk = None
+        for d in schedule.dates or []:
+            for game in d.games or []:
+                status = getattr(getattr(game, 'status', None), 'status_code', None)
+                if status == 'F':
+                    last_pk = game.game_pk
+        if last_pk is None:
+            raise exceptions.ObjectNotFoundException(
+                f'No completed game found for team {team_id} in the past 14 days')
+        return last_pk
+
+    def next_game(self, team_id: int) -> int:
+        """Return the ``game_pk`` of the next scheduled game for a team.
+
+        Searches the next 14 days. Raises
+        :exc:`~mlbapi.exceptions.ObjectNotFoundException` if no upcoming game
+        is found in that window.
+        """
+        from datetime import date, timedelta
+        today = date.today()
+        end = today + timedelta(days=14)
+        schedule = self.schedule(
+            team_id=team_id,
+            start_date=today.strftime('%m/%d/%Y'),
+            end_date=end.strftime('%m/%d/%Y'),
+        )
+        for d in schedule.dates or []:
+            for game in d.games or []:
+                status = getattr(getattr(game, 'status', None), 'status_code', None)
+                if status == 'S':
+                    return game.game_pk
+        raise exceptions.ObjectNotFoundException(
+            f'No upcoming game found for team {team_id} in the next 14 days')

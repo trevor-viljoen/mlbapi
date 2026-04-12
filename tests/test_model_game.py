@@ -182,12 +182,14 @@ class TestInfo:
     def test_label_and_value(self):
         data = {'label': 'Weather', 'value': 'Sunny'}
         info = Info(data)
-        assert info.info == ('Weather', 'Sunny')
+        assert info.label == 'Weather'
+        assert info.value == 'Sunny'
 
     def test_label_only(self):
         data = {'label': 'Weather'}
         info = Info(data)
-        assert info.info == 'Weather'
+        assert info.label == 'Weather'
+        assert info.value is None
 
 
 class TestRecord:

@@ -18,6 +18,10 @@ from mlbapi.utils import check_kwargs
 VALID_TEAMS_PARAMS = ['team_id', 'season', 'division_id', 'game_type', 'league_ids',
                       'active_status', 'league_list_id', 'all_star_statuses', 'fields']
 
+VALID_ROSTER_PARAMS = ['season', 'date', 'game_type', 'fields']
+
+VALID_COACHES_PARAMS = ['season', 'date', 'fields']
+
 
 def get_teams(**kwargs):
     """This endpoint allows you to pull teams.
@@ -106,8 +110,17 @@ def get_team_affiliates(**kwargs):
 def get_team_alumni(**kwargs):
     """ """
 
-def get_team_coaches(**kwargs):
-    """ """
+def get_team_coaches(team_id, **kwargs):
+    """Coaching staff for a team.
+
+    params:
+      team_id (required): Unique team identifier
+      season: Season of play
+      date: Date (format: MM/DD/YYYY)
+      fields: Comma delimited list of specific fields to be returned
+    """
+    check_kwargs(kwargs.keys(), VALID_COACHES_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'coaches', primary_key=team_id, **kwargs)
 
 def get_team_history(**kwargs):
     """ """
@@ -115,8 +128,21 @@ def get_team_history(**kwargs):
 def get_team_leaders(**kwargs):
     """ """
 
-def get_team_roster(**kwargs):
-    """ """
+def get_team_roster(team_id, roster_type=None, **kwargs):
+    """Roster for a team.
+
+    params:
+      team_id (required): Unique team identifier
+      roster_type: One of 'active', '40Man', 'fullSeason', 'fullRoster',
+                   'nonRosterInvitees', 'coach', 'depthChart'
+      season: Season of play
+      date: Date (format: MM/DD/YYYY)
+      game_type: Type of game
+      fields: Comma delimited list of specific fields to be returned
+    """
+    check_kwargs(kwargs.keys(), VALID_ROSTER_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'roster', primary_key=team_id,
+                   secondary_key=roster_type, **kwargs)
 
 def get_team_roster_type(**kwargs):
     """ """
