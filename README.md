@@ -107,6 +107,68 @@ for record in standings.records:
         print(f'{tr.team.name:30s}  {tr.wins}-{tr.losses}  {tr.winning_percentage}')
 ```
 
+### Team Leaders
+
+```python
+from mlbapi import Client
+
+client = Client()
+
+leaders = client.team_leaders(147, season='2024', leader_categories='homeRuns')
+
+for category in leaders.team_leaders:
+    print(f'{category.leader_category} ({category.season})')
+    for entry in category.leaders:
+        print(f'  {entry.rank}. {entry.person.full_name}  {entry.value}')
+```
+
+### Team Affiliates
+
+```python
+from mlbapi import Client
+
+client = Client()
+
+# Affiliates for one team
+affiliates = client.team_affiliates(147, season='2024')
+for team in affiliates.teams:
+    print(team.name)
+
+# Affiliates for multiple teams at once
+affiliates = client.teams_affiliates(team_ids=[147, 111], season='2024')
+for team in affiliates.teams:
+    print(team.name)
+```
+
+### Team Alumni
+
+```python
+from mlbapi import Client
+
+client = Client()
+
+alumni = client.team_alumni(147, season='2000', group='alumni')
+for person in alumni.people:
+    print(person.full_name)
+```
+
+### Team Stats
+
+```python
+from mlbapi import Client
+
+client = Client()
+
+# Stats for a single team
+stats = client.team_stats(147, stats='season', group='hitting', season='2024')
+for group in stats.stats:
+    for split in group.splits:
+        print(split.stat)
+
+# Aggregated stats across all teams
+all_stats = client.teams_stats(stats='season', group='hitting', season='2024')
+```
+
 ---
 
 ## Configuration
@@ -198,6 +260,14 @@ supported values and examples across schedule, people, teams, venues, and stats.
 | `client.teams(**kwargs)` | Team information |
 | `client.roster(team_id, roster_type)` | Team roster (`'active'`, `'40Man'`, `'fullRoster'`, …) |
 | `client.coaches(team_id)` | Coaching staff for a team |
+| `client.team_affiliates(team_id)` | Minor-league affiliates for a team |
+| `client.team_alumni(team_id, season, group)` | Alumni (former players) for a team |
+| `client.team_history(team_id)` | Historical franchise records for a team |
+| `client.team_leaders(team_id)` | Statistical leaders for a team |
+| `client.team_stats(team_id)` | Stats for a single team |
+| `client.teams_affiliates(team_ids)` | Affiliates for multiple teams |
+| `client.teams_history(team_ids)` | Historical records for multiple teams |
+| `client.teams_stats(**kwargs)` | Aggregated stats across all teams |
 | `client.divisions(**kwargs)` | Division information |
 | `client.leagues(**kwargs)` | League information |
 | `client.league_allstar_ballot(league_id)` | All-star ballot for a league |
