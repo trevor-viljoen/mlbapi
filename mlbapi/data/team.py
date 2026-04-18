@@ -22,6 +22,25 @@ VALID_ROSTER_PARAMS = ['season', 'date', 'game_type', 'fields']
 
 VALID_COACHES_PARAMS = ['season', 'date', 'fields']
 
+VALID_TEAM_AFFILIATES_PARAMS = ['season', 'sport_id', 'fields']
+
+VALID_TEAM_ALUMNI_PARAMS = ['season', 'group', 'fields']
+
+VALID_TEAM_HISTORY_PARAMS = ['start_season', 'end_season', 'fields']
+
+VALID_TEAM_LEADERS_PARAMS = ['leader_categories', 'season', 'leader_game_type',
+                              'limit', 'stat_group', 'fields']
+
+VALID_TEAM_STATS_PARAMS = ['stats', 'group', 'season', 'game_type',
+                           'start_date', 'end_date', 'fields']
+
+VALID_TEAMS_AFFILIATES_PARAMS = ['team_ids', 'season', 'sport_id', 'fields']
+
+VALID_TEAMS_HISTORY_PARAMS = ['team_ids', 'start_season', 'end_season', 'fields']
+
+VALID_TEAMS_STATS_PARAMS = ['stats', 'group', 'season', 'sport_id',
+                            'game_type', 'fields']
+
 
 def get_teams(**kwargs):
     """This endpoint allows you to pull teams.
@@ -96,19 +115,35 @@ def get_teams(**kwargs):
     return request(endpoint.TEAM, **kwargs)
 
 def get_teams_affiliates(**kwargs):
-    """ """
+    """Affiliates for multiple teams. Pass ``team_ids`` as a comma-delimited
+    string or list of ints."""
+    check_kwargs(kwargs.keys(), VALID_TEAMS_AFFILIATES_PARAMS, mlbapi.exceptions.ParameterException)
+    if 'team_ids' in kwargs and isinstance(kwargs['team_ids'], list):
+        kwargs['team_ids'] = ','.join(str(int(t)) for t in kwargs['team_ids'])
+    return request(endpoint.TEAM, 'affiliates', **kwargs)
 
 def get_teams_history(**kwargs):
-    """ """
+    """Historical franchise records for multiple teams. Pass ``team_ids`` as a
+    comma-delimited string or list of ints."""
+    check_kwargs(kwargs.keys(), VALID_TEAMS_HISTORY_PARAMS, mlbapi.exceptions.ParameterException)
+    if 'team_ids' in kwargs and isinstance(kwargs['team_ids'], list):
+        kwargs['team_ids'] = ','.join(str(int(t)) for t in kwargs['team_ids'])
+    return request(endpoint.TEAM, 'history', **kwargs)
 
 def get_teams_stats(**kwargs):
-    """ """
+    """Aggregated stats across all teams for a season."""
+    check_kwargs(kwargs.keys(), VALID_TEAMS_STATS_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'stats', **kwargs)
 
-def get_team_affiliates(**kwargs):
-    """ """
+def get_team_affiliates(team_id, **kwargs):
+    """Minor-league and partner affiliates for a single team."""
+    check_kwargs(kwargs.keys(), VALID_TEAM_AFFILIATES_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'affiliates', primary_key=team_id, **kwargs)
 
-def get_team_alumni(**kwargs):
-    """ """
+def get_team_alumni(team_id, **kwargs):
+    """Alumni (former players) for a team in a given season."""
+    check_kwargs(kwargs.keys(), VALID_TEAM_ALUMNI_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'alumni', primary_key=team_id, **kwargs)
 
 def get_team_coaches(team_id, **kwargs):
     """Coaching staff for a team.
@@ -122,11 +157,15 @@ def get_team_coaches(team_id, **kwargs):
     check_kwargs(kwargs.keys(), VALID_COACHES_PARAMS, mlbapi.exceptions.ParameterException)
     return request(endpoint.TEAM, 'coaches', primary_key=team_id, **kwargs)
 
-def get_team_history(**kwargs):
-    """ """
+def get_team_history(team_id, **kwargs):
+    """Historical franchise records for a single team."""
+    check_kwargs(kwargs.keys(), VALID_TEAM_HISTORY_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'history', primary_key=team_id, **kwargs)
 
-def get_team_leaders(**kwargs):
-    """ """
+def get_team_leaders(team_id, **kwargs):
+    """Statistical leaders for a team in a given season."""
+    check_kwargs(kwargs.keys(), VALID_TEAM_LEADERS_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'leaders', primary_key=team_id, **kwargs)
 
 def get_team_roster(team_id, roster_type=None, **kwargs):
     """Roster for a team.
@@ -144,10 +183,9 @@ def get_team_roster(team_id, roster_type=None, **kwargs):
     return request(endpoint.TEAM, 'roster', primary_key=team_id,
                    secondary_key=roster_type, **kwargs)
 
-def get_team_roster_type(**kwargs):
-    """ """
-
-def get_team_stats(**kwargs):
-    """ """
+def get_team_stats(team_id, **kwargs):
+    """Stats for a single team."""
+    check_kwargs(kwargs.keys(), VALID_TEAM_STATS_PARAMS, mlbapi.exceptions.ParameterException)
+    return request(endpoint.TEAM, 'stats', primary_key=team_id, **kwargs)
 
 

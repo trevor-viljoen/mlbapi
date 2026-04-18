@@ -17,10 +17,13 @@ from mlbapi.models.standings import Standings
 from mlbapi.models.team import Teams
 from mlbapi.models.roster import Roster
 from mlbapi.models.division import Divisions
+from mlbapi.models.teamleaders import TeamLeaders
 from tests.conftest import (
     BOXSCORE_DATA, LINESCORE_DATA, SCHEDULE_DATA,
     STANDINGS_DATA, TEAMS_DATA, DIVISIONS_DATA,
     ROSTER_DATA, COACHES_DATA,
+    TEAM_AFFILIATES_DATA, TEAM_ALUMNI_DATA, TEAM_HISTORY_DATA,
+    TEAM_LEADERS_DATA, TEAM_STATS_DATA,
 )
 
 
@@ -763,3 +766,113 @@ class TestClientGet:
         Client(session=session).get(url)
         args, _ = session.get.call_args
         assert args[0] == url
+
+
+# ---------------------------------------------------------------------------
+# Team sub-endpoints
+# ---------------------------------------------------------------------------
+
+class TestTeamAffiliates:
+    def test_returns_teams(self):
+        assert isinstance(_client(TEAM_AFFILIATES_DATA).team_affiliates(147), Teams)
+
+    def test_affiliate_name(self):
+        result = _client(TEAM_AFFILIATES_DATA).team_affiliates(147)
+        assert result.teams[0].name == 'Somerset Patriots'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_AFFILIATES_DATA).team_affiliates(147, not_valid='x')
+
+
+class TestTeamAlumni:
+    def test_returns_people(self):
+        from mlbapi.models.people import People
+        result = _client(TEAM_ALUMNI_DATA).team_alumni(147, season='2000', group='alumni')
+        assert isinstance(result, People)
+
+    def test_person_name(self):
+        result = _client(TEAM_ALUMNI_DATA).team_alumni(147, season='2000', group='alumni')
+        assert result.people[0].full_name == 'Derek Jeter'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_ALUMNI_DATA).team_alumni(147, not_valid='x')
+
+
+class TestTeamHistory:
+    def test_returns_teams(self):
+        assert isinstance(_client(TEAM_HISTORY_DATA).team_history(147), Teams)
+
+    def test_team_name(self):
+        result = _client(TEAM_HISTORY_DATA).team_history(147)
+        assert result.teams[0].name == 'New York Yankees'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_HISTORY_DATA).team_history(147, not_valid='x')
+
+
+class TestTeamLeaders:
+    def test_returns_team_leaders(self):
+        assert isinstance(_client(TEAM_LEADERS_DATA).team_leaders(147), TeamLeaders)
+
+    def test_category(self):
+        result = _client(TEAM_LEADERS_DATA).team_leaders(147)
+        assert result.team_leaders[0].leader_category == 'homeRuns'
+
+    def test_leader_value(self):
+        result = _client(TEAM_LEADERS_DATA).team_leaders(147)
+        assert result.team_leaders[0].leaders[0].value == '58'
+
+    def test_leader_name(self):
+        result = _client(TEAM_LEADERS_DATA).team_leaders(147)
+        assert result.team_leaders[0].leaders[0].person.full_name == 'Aaron Judge'
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_LEADERS_DATA).team_leaders(147, not_valid='x')
+
+
+class TestTeamStats:
+    def test_returns_stats(self):
+        from mlbapi.models.stats import Stats
+        result = _client(TEAM_STATS_DATA).team_stats(147)
+        assert isinstance(result, Stats)
+
+    def test_stats_count(self):
+        result = _client(TEAM_STATS_DATA).team_stats(147)
+        assert len(result.stats) == 1
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_STATS_DATA).team_stats(147, not_valid='x')
+
+
+class TestTeamsAffiliates:
+    def test_returns_teams(self):
+        assert isinstance(_client(TEAM_AFFILIATES_DATA).teams_affiliates(team_ids=[147]), Teams)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_AFFILIATES_DATA).teams_affiliates(team_ids=[147], not_valid='x')
+
+
+class TestTeamsHistory:
+    def test_returns_teams(self):
+        assert isinstance(_client(TEAM_HISTORY_DATA).teams_history(team_ids=[147]), Teams)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_HISTORY_DATA).teams_history(team_ids=[147], not_valid='x')
+
+
+class TestTeamsStats:
+    def test_returns_stats(self):
+        from mlbapi.models.stats import Stats
+        result = _client(TEAM_STATS_DATA).teams_stats()
+        assert isinstance(result, Stats)
+
+    def test_invalid_param_raises(self):
+        with pytest.raises(ParameterException):
+            _client(TEAM_STATS_DATA).teams_stats(not_valid='x')

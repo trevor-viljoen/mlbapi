@@ -52,7 +52,12 @@ from mlbapi.data.game import (
 )
 from mlbapi.data.schedule import VALID_SCHEDULE_PARAMS
 from mlbapi.data.standings import VALID_STANDINGS_PARAMS
-from mlbapi.data.team import VALID_TEAMS_PARAMS, VALID_ROSTER_PARAMS, VALID_COACHES_PARAMS
+from mlbapi.data.team import (
+    VALID_TEAMS_PARAMS, VALID_ROSTER_PARAMS, VALID_COACHES_PARAMS,
+    VALID_TEAM_AFFILIATES_PARAMS, VALID_TEAM_ALUMNI_PARAMS,
+    VALID_TEAM_HISTORY_PARAMS, VALID_TEAM_LEADERS_PARAMS, VALID_TEAM_STATS_PARAMS,
+    VALID_TEAMS_AFFILIATES_PARAMS, VALID_TEAMS_HISTORY_PARAMS, VALID_TEAMS_STATS_PARAMS,
+)
 from mlbapi.data.division import VALID_DIVISION_PARAMS
 from mlbapi.data.conference import VALID_CONFERENCE_PARAMS
 from mlbapi.data.league import VALID_LEAGUE_PARAMS, VALID_LEAGUE_ALLSTAR_PARAMS
@@ -91,6 +96,7 @@ from mlbapi.models.standings import Standings
 from mlbapi.models.stats import Stats, StatsLeaders
 from mlbapi.models.team import Teams
 from mlbapi.models.roster import Roster
+from mlbapi.models.teamleaders import TeamLeaders
 from mlbapi.models.transactions import Transactions
 from mlbapi.models.venue import Venues
 from mlbapi.models.people import People
@@ -401,6 +407,60 @@ class Client:
         data = self._request(endpoint.TEAM, 'coaches', primary_key=team_id,
                              valid_params=VALID_COACHES_PARAMS, **kwargs)
         return Roster.model_validate(data)
+
+    def team_affiliates(self, team_id: int, **kwargs) -> Teams:
+        """Minor-league and partner affiliates for a team."""
+        data = self._request(endpoint.TEAM, 'affiliates', primary_key=team_id,
+                             valid_params=VALID_TEAM_AFFILIATES_PARAMS, **kwargs)
+        return Teams.model_validate(data)
+
+    def team_alumni(self, team_id: int, **kwargs) -> People:
+        """Alumni (former players) for a team in a given season."""
+        data = self._request(endpoint.TEAM, 'alumni', primary_key=team_id,
+                             valid_params=VALID_TEAM_ALUMNI_PARAMS, **kwargs)
+        return People.model_validate(data)
+
+    def team_history(self, team_id: int, **kwargs) -> Teams:
+        """Historical franchise records for a single team."""
+        data = self._request(endpoint.TEAM, 'history', primary_key=team_id,
+                             valid_params=VALID_TEAM_HISTORY_PARAMS, **kwargs)
+        return Teams.model_validate(data)
+
+    def team_leaders(self, team_id: int, **kwargs) -> TeamLeaders:
+        """Statistical leaders for a team."""
+        data = self._request(endpoint.TEAM, 'leaders', primary_key=team_id,
+                             valid_params=VALID_TEAM_LEADERS_PARAMS, **kwargs)
+        return TeamLeaders.model_validate(data)
+
+    def team_stats(self, team_id: int, **kwargs) -> Stats:
+        """Stats for a single team."""
+        data = self._request(endpoint.TEAM, 'stats', primary_key=team_id,
+                             valid_params=VALID_TEAM_STATS_PARAMS, **kwargs)
+        return Stats.model_validate(data)
+
+    def teams_affiliates(self, team_ids, **kwargs) -> Teams:
+        """Affiliates for multiple teams."""
+        if isinstance(team_ids, list):
+            team_ids = to_comma_delimited_string(team_ids, int)
+        kwargs['team_ids'] = team_ids
+        data = self._request(endpoint.TEAM, 'affiliates',
+                             valid_params=VALID_TEAMS_AFFILIATES_PARAMS, **kwargs)
+        return Teams.model_validate(data)
+
+    def teams_history(self, team_ids, **kwargs) -> Teams:
+        """Historical franchise records for multiple teams."""
+        if isinstance(team_ids, list):
+            team_ids = to_comma_delimited_string(team_ids, int)
+        kwargs['team_ids'] = team_ids
+        data = self._request(endpoint.TEAM, 'history',
+                             valid_params=VALID_TEAMS_HISTORY_PARAMS, **kwargs)
+        return Teams.model_validate(data)
+
+    def teams_stats(self, **kwargs) -> Stats:
+        """Aggregated stats across all teams for a season."""
+        data = self._request(endpoint.TEAM, 'stats',
+                             valid_params=VALID_TEAMS_STATS_PARAMS, **kwargs)
+        return Stats.model_validate(data)
 
     # ------------------------------------------------------------------
     # Divisions

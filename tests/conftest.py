@@ -509,3 +509,62 @@ COACHES_DATA = {
         },
     ],
 }
+
+TEAM_AFFILIATES_DATA = {
+    'teams': [
+        {'id': 565, 'name': 'Somerset Patriots', 'link': '/api/v1/teams/565',
+         'season': '2024', 'active': True},
+    ]
+}
+
+TEAM_ALUMNI_DATA = {
+    'people': [
+        {'id': 118377, 'fullName': 'Derek Jeter', 'link': '/api/v1/people/118377',
+         'firstName': 'Derek', 'lastName': 'Jeter'},
+    ]
+}
+
+TEAM_HISTORY_DATA = {
+    'teams': [
+        {'id': 147, 'name': 'New York Yankees', 'link': '/api/v1/teams/147',
+         'season': '1903', 'firstYearOfPlay': '1901', 'active': True},
+    ]
+}
+
+TEAM_LEADERS_DATA = {
+    'teamLeaders': [
+        {
+            'leaderCategory': 'homeRuns',
+            'season': '2024',
+            'gameType': 'R',
+            'statGroup': 'hitting',
+            'totalSplits': 1,
+            'team': {'id': 147, 'name': 'New York Yankees', 'link': '/api/v1/teams/147'},
+            'leaders': [
+                {
+                    'rank': 1,
+                    'value': '58',
+                    'person': {'id': 592450, 'fullName': 'Aaron Judge', 'link': '/api/v1/people/592450'},
+                    'season': '2024',
+                }
+            ],
+        }
+    ]
+}
+
+TEAM_STATS_DATA = {
+    'stats': [
+        {
+            'type': {'displayName': 'season'},
+            'group': {'displayName': 'hitting'},
+            'exemptions': [],
+            'splits': [
+                {
+                    'season': '2024',
+                    'stat': {'gamesPlayed': 162, 'homeRuns': 237, 'avg': '.244'},
+                    'team': {'id': 147, 'name': 'New York Yankees', 'link': '/api/v1/teams/147'},
+                }
+            ],
+        }
+    ]
+}
