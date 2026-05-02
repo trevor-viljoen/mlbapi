@@ -104,3 +104,7 @@ class TestToCommaDelimitedString:
     def test_single_invalid_value_raises(self):
         with pytest.raises(mlbapi.exceptions.ParameterException):
             mlbapi.utils.to_comma_delimited_string('not_a_number', int)
+
+    def test_empty_list_raises(self):
+        with pytest.raises(mlbapi.exceptions.ParameterException, match='must not be empty'):
+            mlbapi.utils.to_comma_delimited_string([], int)

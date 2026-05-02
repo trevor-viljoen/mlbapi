@@ -48,9 +48,16 @@ class TestGetStandings:
             result = standings_data.get_standings(league_id=[103, '104'])
         assert result is not None
 
-    def test_league_id_not_list_raises(self):
-        with pytest.raises(mlbapi.exceptions.ParameterException, match='must be a list'):
+    def test_league_id_as_single_int(self):
+        with patch('requests.get', return_value=_mock_get(STANDINGS_DATA)):
+            result = standings_data.get_standings(league_id=103)
+        assert result is not None
+
+    def test_league_id_as_single_int_becomes_string(self):
+        with patch('requests.get', return_value=_mock_get(STANDINGS_DATA)) as mock_get:
             standings_data.get_standings(league_id=103)
+        params = mock_get.call_args[1].get('params', {})
+        assert params.get('leagueId') == '103'
 
     def test_league_id_invalid_string_raises(self):
         with pytest.raises(mlbapi.exceptions.ParameterException):

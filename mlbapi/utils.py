@@ -38,6 +38,9 @@ def to_comma_delimited_string(values, instype):
     """ Return a comma delimited string of values, each converted to instype """
     if not isinstance(values, list):
         values = [values]
+    if not values:
+        raise mlbapi.exceptions.ParameterException(
+            'Parameter list must not be empty.')
     result = []
     for val in values:
         if not isinstance(val, instype):

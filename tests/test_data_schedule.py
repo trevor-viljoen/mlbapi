@@ -78,8 +78,24 @@ class TestGetSchedule:
         assert result is not None
 
     def test_opponent_id_with_team_id_passes(self):
-        # opponent_id validation only runs when start_date/end_date checks pass
-        # and opponent_id check comes in elif chain
         with patch('requests.get', return_value=_mock_get(SCHEDULE_DATA)):
             result = schedule_data.get_schedule(team_id=147, opponent_id=111, date='06/01/2023')
         assert result is not None
+
+    def test_sport_id_defaults_to_1_when_start_date_present(self):
+        with patch('requests.get', return_value=_mock_get(SCHEDULE_DATA)) as mock_get:
+            schedule_data.get_schedule(start_date='06/01/2023', end_date='06/07/2023')
+        params = mock_get.call_args[1].get('params', {})
+        assert params.get('sportId') == 1
+
+    def test_seasons_coerced_when_start_date_also_present(self):
+        with patch('requests.get', return_value=_mock_get(SCHEDULE_DATA)) as mock_get:
+            schedule_data.get_schedule(
+                start_date='01/01/2023', end_date='12/31/2023', seasons=[2022, 2023])
+        params = mock_get.call_args[1].get('params', {})
+        assert params.get('seasons') == '2022,2023'
+
+    def test_opponent_id_without_team_id_raises_even_with_start_date(self):
+        with pytest.raises(mlbapi.exceptions.ParameterException, match='opponentId'):
+            schedule_data.get_schedule(
+                start_date='06/01/2023', end_date='06/07/2023', opponent_id=147)

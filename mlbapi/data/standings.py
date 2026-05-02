@@ -12,10 +12,10 @@ endpoints.
 from mlbapi import endpoint
 import mlbapi.exceptions
 from mlbapi.data import request
-from mlbapi.utils import check_kwargs
+from mlbapi.utils import check_kwargs, to_comma_delimited_string
 
 
-VALID_STANDINGS_PARAMS = ['standings_type', 'league_id', 'season', 'standings_types', 'date',
+VALID_STANDINGS_PARAMS = ['league_id', 'season', 'standings_types', 'date',
                           'team_id', 'include_mlb', 'expand', 'fields']
 
 
@@ -67,12 +67,5 @@ def get_standings(standings_type=None, **kwargs):
     """
     check_kwargs(kwargs.keys(), VALID_STANDINGS_PARAMS, mlbapi.exceptions.ParameterException)
     if 'league_id' in kwargs.keys():
-        if isinstance(kwargs['league_id'], list):
-            try:
-                kwargs['league_id'] = ','.join(str(int(lid)) for lid in kwargs['league_id'])
-            except ValueError as error:
-                raise mlbapi.exceptions.ParameterException(error)
-        else:
-            error = 'league_id must be a list of leagues as Integers or Strings.'
-            raise mlbapi.exceptions.ParameterException(error)
+        kwargs['league_id'] = to_comma_delimited_string(kwargs['league_id'], int)
     return request(endpoint.STANDINGS, primary_key=standings_type, **kwargs)

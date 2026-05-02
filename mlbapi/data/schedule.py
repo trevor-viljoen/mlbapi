@@ -56,15 +56,15 @@ def get_schedule(**kwargs): # pylint: disable=too-many-branches
         if 'end_date' not in kwargs.keys():
             error = 'Query contains start_date with no end_date.'
             raise mlbapi.exceptions.ParameterException(error)
-    elif 'end_date' in kwargs.keys():
+    if 'end_date' in kwargs.keys():
         if 'start_date' not in kwargs.keys():
             error = 'Query contains end_date with no start_date.'
             raise mlbapi.exceptions.ParameterException(error)
-    elif 'opponent_id' in kwargs.keys():
+    if 'opponent_id' in kwargs.keys():
         if 'team_id' not in kwargs.keys():
             error = 'Query contains opponentId with no teamId.'
             raise mlbapi.exceptions.ParameterException(error)
-    elif 'seasons' in kwargs.keys():
+    if 'seasons' in kwargs.keys():
         if isinstance(kwargs['seasons'], list):
             try:
                 kwargs['seasons'] = ','.join(str(int(s)) for s in kwargs['seasons'])
@@ -73,6 +73,6 @@ def get_schedule(**kwargs): # pylint: disable=too-many-branches
         else:
             error = 'seasons must be a list of years as Integers or Strings.'
             raise mlbapi.exceptions.ParameterException(error)
-    elif 'sport_id' not in kwargs.keys():
+    if 'sport_id' not in kwargs.keys():
         kwargs['sport_id'] = 1
     return request(endpoint.SCHEDULE, valid_params=VALID_SCHEDULE_PARAMS, **kwargs)
